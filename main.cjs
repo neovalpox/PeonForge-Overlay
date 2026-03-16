@@ -1,20 +1,37 @@
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execSync, exec } = require('child_process');
+const { exec } = require('child_process');
 const os = require('os');
+const http = require('http');
 
 let tray = null;
 let overlayWindow = null;
-let faction = 'human'; // default
+let settingsWindow = null;
+let serverInstance = null;
+let faction = 'human';
 let volume = 0.7;
 let watching = true;
+let soundEnabled = true;
+let notifCount = 0;
 
-// Config
 const CONFIG_DIR = path.join(os.homedir(), '.peonping-overlay');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
-const PEON_DIR = path.join(os.homedir(), '.claude', 'hooks', 'peon-ping');
+const HISTORY_FILE = path.join(CONFIG_DIR, 'history.json');
+const PEON_BIN = path.join(os.homedir(), '.local', 'bin', 'peon');
 
+// ─── Single Instance ──────────────────────────────
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+  return;
+}
+app.on('second-instance', () => {
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.focus();
+  else openSettings();
+});
+
+// ─── Config ───────────────────────────────────────
 function loadConfig() {
   try {
     if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -22,86 +39,158 @@ function loadConfig() {
       const c = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
       faction = c.faction || 'human';
       volume = c.volume ?? 0.7;
+      soundEnabled = c.soundEnabled !== false;
+      watching = c.watching !== false;
     }
   } catch {}
 }
 
 function saveConfig() {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ faction, volume }, null, 2));
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ faction, volume, soundEnabled, watching }, null, 2));
   } catch {}
 }
 
-// ─── Watch peon-ping hooks for Claude events ──────
-// We watch the peon-ping sessions/log to detect when Claude finishes
-// Alternative: poll Claude terminals or watch a trigger file
-
-let lastEventTime = Date.now();
-
-function startWatcher() {
-  // Create a trigger file that NeonHub or Claude hooks can write to
-  const triggerFile = path.join(CONFIG_DIR, 'trigger.json');
-
-  // Poll the trigger file for new events
-  setInterval(() => {
-    if (!watching) return;
-    try {
-      if (!fs.existsSync(triggerFile)) return;
-      const stat = fs.statSync(triggerFile);
-      if (stat.mtimeMs > lastEventTime) {
-        lastEventTime = Date.now();
-        const data = JSON.parse(fs.readFileSync(triggerFile, 'utf-8'));
-        showOverlay(data.project || 'Projet', data.faction || faction);
-        // Play peon-ping sound
-        playPeonSound();
-      }
-    } catch {}
-  }, 1000);
-
-  // Also set up a tiny HTTP server for direct triggers
-  const http = require('http');
-  const server = http.createServer((req, res) => {
-    if (req.method === 'POST' && req.url === '/notify') {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const data = JSON.parse(body);
-          showOverlay(data.project || 'Projet', data.faction || faction);
-          playPeonSound();
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end('{"ok":true}');
-        } catch {
-          res.writeHead(400);
-          res.end('{"error":"bad json"}');
-        }
-      });
-    } else if (req.method === 'GET' && req.url === '/status') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ running: true, faction, watching }));
-    } else {
-      res.writeHead(404);
-      res.end('not found');
-    }
-  });
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log('[PeonPing Overlay] Port 7777 busy, trying 7778...');
-      server.listen(7778, '127.0.0.1');
-    } else {
-      console.error('[PeonPing Overlay] Server error:', err.message);
-    }
-  });
-  server.listen(7777, '127.0.0.1', () => {
-    console.log('[PeonPing Overlay] Listening on http://127.0.0.1:7777');
-  });
+function addHistory(project) {
+  try {
+    let history = [];
+    if (fs.existsSync(HISTORY_FILE)) history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+    history.unshift({ project, faction, time: new Date().toISOString() });
+    if (history.length > 50) history.length = 50;
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+  } catch {}
 }
 
-function playPeonSound() {
+// ─── Tray Icon ────────────────────────────────────
+function createTrayIcon() {
+  // Build a proper 32x32 icon with a pickaxe/peon visual
+  const size = 32;
+  const buf = Buffer.alloc(size * size * 4);
+  // Peon face simplified: green/skin circle with eyes
+  const isOrc = faction === 'orc';
+  const skinR = isOrc ? 0x7a : 0xf5, skinG = isOrc ? 0xb6 : 0xc5, skinB = isOrc ? 0x48 : 0xa3;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - 16, dy = y - 16;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const off = (y * size + x) * 4;
+
+      if (dist < 13) {
+        // Face
+        buf[off] = skinR; buf[off + 1] = skinG; buf[off + 2] = skinB; buf[off + 3] = 255;
+        // Eyes
+        if ((Math.abs(dx - 4) < 2 && Math.abs(dy + 2) < 2) || (Math.abs(dx + 4) < 2 && Math.abs(dy + 2) < 2)) {
+          buf[off] = 20; buf[off + 1] = 20; buf[off + 2] = 20;
+        }
+        // Mouth
+        if (dy > 3 && dy < 6 && Math.abs(dx) < 4) {
+          buf[off] = 30; buf[off + 1] = 30; buf[off + 2] = 30;
+        }
+      } else if (dist < 15) {
+        // Border
+        buf[off] = 0; buf[off + 1] = 240; buf[off + 2] = 255; buf[off + 3] = 200;
+      } else {
+        buf[off + 3] = 0;
+      }
+    }
+  }
+  return nativeImage.createFromBuffer(buf, { width: size, height: size });
+}
+
+function createTray() {
+  const icon = createTrayIcon();
+  tray = new Tray(icon);
+  tray.setToolTip(`PeonPing Overlay — ${faction === 'human' ? 'Humain' : 'Orc'}`);
+  updateTrayMenu();
+
+  tray.on('click', () => openSettings());
+  tray.on('double-click', () => openSettings());
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+  const menu = Menu.buildFromTemplate([
+    { label: `PeonPing Overlay (${notifCount} notifs)`, enabled: false },
+    { type: 'separator' },
+    { label: 'Ouvrir les parametres', click: openSettings },
+    { label: 'Tester la notification', click: () => { showOverlay('TestProject', faction); playPeonSound(); } },
+    { type: 'separator' },
+    {
+      label: 'Faction',
+      submenu: [
+        { label: 'Humain (Paysan)', type: 'radio', checked: faction === 'human', click: () => { setFaction('human'); } },
+        { label: 'Orc (Peon)', type: 'radio', checked: faction === 'orc', click: () => { setFaction('orc'); } },
+      ]
+    },
+    { label: soundEnabled ? 'Son active' : 'Son desactive', click: () => { soundEnabled = !soundEnabled; saveConfig(); updateTrayMenu(); } },
+    { label: watching ? 'En ecoute' : 'En pause', click: () => { watching = !watching; saveConfig(); updateTrayMenu(); } },
+    { type: 'separator' },
+    { label: 'Quitter', click: () => { app.quit(); } }
+  ]);
+  tray.setContextMenu(menu);
+  tray.setToolTip(`PeonPing Overlay — ${faction === 'human' ? 'Humain' : 'Orc'} — ${watching ? 'Actif' : 'Pause'}`);
+}
+
+function setFaction(f) {
+  faction = f;
+  saveConfig();
+  tray.setImage(createTrayIcon());
+  updateTrayMenu();
+  // Also update peon-ping config
   try {
-    const peonBin = path.join(os.homedir(), '.local', 'bin', 'peon');
-    if (fs.existsSync(peonBin) || fs.existsSync(peonBin + '.cmd')) {
-      exec(`"${peonBin}" preview task.complete`, { timeout: 5000 });
+    const ppConfig = path.join(os.homedir(), '.claude', 'hooks', 'peon-ping', 'config.json');
+    if (fs.existsSync(ppConfig)) {
+      const cfg = JSON.parse(fs.readFileSync(ppConfig, 'utf-8'));
+      cfg.active_pack = f === 'orc' ? 'peon' : 'peasant';
+      fs.writeFileSync(ppConfig, JSON.stringify(cfg, null, 4));
+    }
+  } catch {}
+  // Update settings window if open
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send('config-update', { faction, volume, soundEnabled, watching });
+  }
+}
+
+// ─── Settings Window ──────────────────────────────
+function openSettings() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 620,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload-settings.cjs')
+    }
+  });
+
+  settingsWindow.loadFile('settings.html', {
+    query: {
+      faction,
+      volume: String(volume),
+      soundEnabled: String(soundEnabled),
+      watching: String(watching),
+      notifCount: String(notifCount)
+    }
+  });
+
+  settingsWindow.on('closed', () => { settingsWindow = null; });
+}
+
+// ─── Sound ────────────────────────────────────────
+function playPeonSound() {
+  if (!soundEnabled) return;
+  try {
+    if (fs.existsSync(PEON_BIN) || fs.existsSync(PEON_BIN + '.cmd')) {
+      exec(`"${PEON_BIN}" preview task.complete`, { timeout: 5000 });
     }
   } catch {}
 }
@@ -112,6 +201,10 @@ function showOverlay(project, fac) {
     overlayWindow.close();
     overlayWindow = null;
   }
+
+  notifCount++;
+  addHistory(project);
+  updateTrayMenu();
 
   const display = screen.getPrimaryDisplay();
   const { width: sw } = display.workAreaSize;
@@ -136,15 +229,92 @@ function showOverlay(project, fac) {
   const p = encodeURIComponent(project);
   const f = encodeURIComponent(fac);
   overlayWindow.loadFile('overlay.html', { query: { project: p, faction: f } });
-
   overlayWindow.on('closed', () => { overlayWindow = null; });
 
-  // Auto close
   setTimeout(() => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      overlayWindow.close();
-    }
+    if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close();
   }, 12000);
+}
+
+// ─── HTTP Server ──────────────────────────────────
+function startServer() {
+  const triggerFile = path.join(CONFIG_DIR, 'trigger.json');
+  let lastEventTime = Date.now();
+
+  // File watcher
+  setInterval(() => {
+    if (!watching) return;
+    try {
+      if (!fs.existsSync(triggerFile)) return;
+      const stat = fs.statSync(triggerFile);
+      if (stat.mtimeMs > lastEventTime) {
+        lastEventTime = Date.now();
+        const data = JSON.parse(fs.readFileSync(triggerFile, 'utf-8'));
+        showOverlay(data.project || 'Projet', data.faction || faction);
+        playPeonSound();
+      }
+    } catch {}
+  }, 1000);
+
+  // HTTP server
+  serverInstance = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+
+    if (req.method === 'POST' && req.url === '/notify') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (watching) {
+            showOverlay(data.project || 'Projet', data.faction || faction);
+            playPeonSound();
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end('{"ok":true}');
+        } catch {
+          res.writeHead(400);
+          res.end('{"error":"bad json"}');
+        }
+      });
+    } else if (req.method === 'GET' && req.url === '/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ running: true, faction, watching, soundEnabled, notifCount }));
+    } else if (req.method === 'POST' && req.url === '/config') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (data.faction) setFaction(data.faction);
+          if (data.volume !== undefined) { volume = data.volume; saveConfig(); }
+          if (data.soundEnabled !== undefined) { soundEnabled = data.soundEnabled; saveConfig(); updateTrayMenu(); }
+          if (data.watching !== undefined) { watching = data.watching; saveConfig(); updateTrayMenu(); }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end('{"ok":true}');
+        } catch {
+          res.writeHead(400);
+          res.end('{"error":"bad json"}');
+        }
+      });
+    } else {
+      res.writeHead(404);
+      res.end('not found');
+    }
+  });
+
+  serverInstance.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log('[PeonPing] Port 7777 busy, trying 7778...');
+      serverInstance.listen(7778, '127.0.0.1');
+    }
+  });
+  serverInstance.listen(7777, '127.0.0.1', () => {
+    console.log('[PeonPing] HTTP server on http://127.0.0.1:7777');
+  });
 }
 
 // ─── IPC ──────────────────────────────────────────
@@ -153,96 +323,28 @@ ipcMain.on('close-overlay', () => {
 });
 
 ipcMain.on('focus-neonhub', () => {
-  // Try to focus NeonHub window
-  try {
-    if (process.platform === 'win32') {
-      exec('powershell -Command "(Get-Process NeonHub -ErrorAction SilentlyContinue | Select-Object -First 1).MainWindowHandle | ForEach-Object { [void][System.Runtime.InteropServices.Marshal]::GetLastWin32Error() }"');
-    }
-  } catch {}
   if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close();
 });
 
-// ─── Tray Icon ────────────────────────────────────
-function createTray() {
-  // Generate a simple tray icon if not exists
-  const iconPath = path.join(__dirname, 'tray-icon.png');
-  if (!fs.existsSync(iconPath)) {
-    // Create a tiny 16x16 PNG programmatically
-    generateTrayIcon(iconPath);
-  }
-
-  tray = new Tray(iconPath);
-
-  function buildMenu() {
-    return Menu.buildFromTemplate([
-      { label: 'PeonPing Overlay', enabled: false },
-      { type: 'separator' },
-      {
-        label: `Faction: ${faction === 'human' ? 'Humain' : 'Orc'}`,
-        submenu: [
-          { label: 'Humain (Paysan)', type: 'radio', checked: faction === 'human', click: () => { faction = 'human'; saveConfig(); tray.setContextMenu(buildMenu()); } },
-          { label: 'Orc (Peon)', type: 'radio', checked: faction === 'orc', click: () => { faction = 'orc'; saveConfig(); tray.setContextMenu(buildMenu()); } },
-        ]
-      },
-      { label: 'Tester la notification', click: () => showOverlay('TestProject', faction) },
-      { type: 'separator' },
-      { label: watching ? 'Pause' : 'Reprendre', click: () => { watching = !watching; tray.setContextMenu(buildMenu()); } },
-      { type: 'separator' },
-      { label: 'Quitter', click: () => app.quit() }
-    ]);
-  }
-
-  tray.setToolTip('PeonPing Overlay');
-  tray.setContextMenu(buildMenu());
-  tray.on('click', () => showOverlay('TestProject', faction));
-}
-
-function generateTrayIcon(filepath) {
-  // Create a minimal 32x32 PNG with a pickaxe emoji placeholder
-  // We'll use a simple canvas approach via Electron's nativeImage
-  const { nativeImage } = require('electron');
-  const canvas = Buffer.alloc(32 * 32 * 4);
-  // Draw a simple blue/cyan circle
-  for (let y = 0; y < 32; y++) {
-    for (let x = 0; x < 32; x++) {
-      const dx = x - 16, dy = y - 16;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const offset = (y * 32 + x) * 4;
-      if (dist < 14) {
-        canvas[offset] = 0;     // R
-        canvas[offset + 1] = 240; // G
-        canvas[offset + 2] = 255; // B
-        canvas[offset + 3] = dist < 12 ? 255 : 128; // A
-      } else {
-        canvas[offset + 3] = 0; // transparent
-      }
-    }
-  }
-  const img = nativeImage.createFromBuffer(canvas, { width: 32, height: 32 });
-  fs.writeFileSync(filepath, img.toPNG());
-}
+ipcMain.on('settings:set-faction', (e, f) => setFaction(f));
+ipcMain.on('settings:set-sound', (e, v) => { soundEnabled = v; saveConfig(); updateTrayMenu(); });
+ipcMain.on('settings:set-watching', (e, v) => { watching = v; saveConfig(); updateTrayMenu(); });
+ipcMain.on('settings:set-volume', (e, v) => { volume = v; saveConfig(); });
+ipcMain.on('settings:test', () => { showOverlay('TestProject', faction); playPeonSound(); });
+ipcMain.on('settings:close', () => { if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.close(); });
+ipcMain.on('settings:get-history', (e) => {
+  try {
+    if (fs.existsSync(HISTORY_FILE)) e.returnValue = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
+    else e.returnValue = [];
+  } catch { e.returnValue = []; }
+});
 
 // ─── App ──────────────────────────────────────────
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-  console.log('[PeonPing Overlay] Another instance is already running. Quitting.');
-  app.quit();
-} else {
-  app.on('second-instance', () => {
-    // Second instance tried to start — show a test notification instead
-    showOverlay('PeonPing', faction);
-  });
+app.whenReady().then(() => {
+  loadConfig();
+  createTray();
+  startServer();
+  console.log('[PeonPing] Ready! Faction:', faction);
+});
 
-  app.whenReady().then(() => {
-    loadConfig();
-    createTray();
-    startWatcher();
-    console.log('[PeonPing Overlay] Ready! Faction:', faction);
-    console.log('[PeonPing Overlay] HTTP trigger: POST http://127.0.0.1:7777/notify');
-    console.log('[PeonPing Overlay] File trigger:', path.join(CONFIG_DIR, 'trigger.json'));
-  });
-
-  app.on('window-all-closed', (e) => {
-    e.preventDefault(); // Keep running in tray
-  });
-}
+app.on('window-all-closed', (e) => e.preventDefault());

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: transparent; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; }
+body { display: flex; align-items: center; justify-content: center; -webkit-app-region: drag; }
+
+.panel {
+  width: 460px; background: rgba(10,10,20,0.96); border: 1.5px solid rgba(0,240,255,0.25);
+  border-radius: 18px; padding: 0; overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,240,255,0.1), 0 12px 48px rgba(0,0,0,0.7);
+  -webkit-app-region: no-drag; animation: panelIn 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes panelIn { from { opacity:0; transform: scale(0.9) translateY(20px); } }
+
+/* Header */
+.header {
+  display: flex; align-items: center; gap: 12px; padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.06), rgba(139,92,246,0.04));
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  -webkit-app-region: drag;
+}
+.header canvas { image-rendering: pixelated; width: 48px; height: auto; filter: drop-shadow(0 0 8px rgba(0,240,255,0.3)); }
+.header-text h1 { font-size: 16px; font-weight: 700; color: #e0e0f0; letter-spacing: 1px; }
+.header-text p { font-size: 11px; color: #6a6a8a; margin-top: 2px; }
+.close-btn {
+  margin-left: auto; background: none; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: #6a6a8a; width: 32px; height: 32px; font-size: 16px;
+  cursor: pointer; transition: all 0.2s; -webkit-app-region: no-drag;
+}
+.close-btn:hover { color: #ff3366; border-color: rgba(255,51,102,0.3); background: rgba(255,51,102,0.08); }
+
+/* Body */
+.body { padding: 16px 22px; display: flex; flex-direction: column; gap: 14px; max-height: 480px; overflow-y: auto; }
+
+/* Section */
+.section { display: flex; flex-direction: column; gap: 8px; }
+.section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #6a6a8a; font-weight: 600; }
+
+/* Faction toggle */
+.faction-row { display: flex; gap: 8px; }
+.faction-btn {
+  flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.25s;
+  text-align: center; color: #8a8aaa; font-size: 13px; font-weight: 600;
+}
+.faction-btn:hover { background: rgba(255,255,255,0.04); }
+.faction-btn.active.human { border-color: #00aaff; color: #00aaff; background: rgba(0,170,255,0.08); box-shadow: 0 0 16px rgba(0,170,255,0.12); }
+.faction-btn.active.orc { border-color: #ff3366; color: #ff3366; background: rgba(255,51,102,0.08); box-shadow: 0 0 16px rgba(255,51,102,0.12); }
+.faction-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+
+/* Toggle row */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.toggle-label { font-size: 13px; color: #c0c0d0; }
+.toggle-sub { font-size: 10px; color: #6a6a8a; }
+.toggle {
+  width: 44px; height: 24px; border-radius: 12px; background: rgba(255,255,255,0.08);
+  border: none; cursor: pointer; position: relative; transition: background 0.3s;
+}
+.toggle.on { background: rgba(0,240,255,0.3); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: 50%; background: #e0e0f0; transition: transform 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle.on::after { transform: translateX(20px); background: #00f0ff; }
+
+/* Volume */
+.volume-row { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+.volume-row span { font-size: 12px; color: #6a6a8a; min-width: 30px; }
+input[type="range"] {
+  flex: 1; height: 4px; appearance: none; background: rgba(255,255,255,0.08);
+  border-radius: 2px; outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: #00f0ff; cursor: pointer; box-shadow: 0 0 6px rgba(0,240,255,0.4);
+}
+
+/* Test button */
+.test-btn {
+  width: 100%; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700;
+  color: #00f0ff; background: linear-gradient(135deg, rgba(0,240,255,0.08), rgba(139,92,246,0.04));
+  border: 1.5px solid rgba(0,240,255,0.25); cursor: pointer; transition: all 0.3s;
+  letter-spacing: 1px;
+}
+.test-btn:hover { background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(139,92,246,0.08)); box-shadow: 0 0 20px rgba(0,240,255,0.15); transform: translateY(-1px); }
+.test-btn:active { transform: translateY(0); }
+
+/* History */
+.history-list { display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; }
+.history-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: rgba(255,255,255,0.015); border-radius: 6px; font-size: 11px;
+}
+.history-project { color: #00f0ff; font-weight: 600; flex: 1; }
+.history-time { color: #6a6a8a; }
+.history-faction { font-size: 14px; }
+
+.empty { text-align: center; color: #4a4a6a; font-size: 12px; padding: 12px; }
+
+/* Scrollbar */
+.body::-webkit-scrollbar { width: 4px; }
+.body::-webkit-scrollbar-track { background: transparent; }
+.body::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header">
+    <canvas id="header-sprite" width="48" height="68"></canvas>
+    <div class="header-text">
+      <h1>PeonPing Overlay</h1>
+      <p id="header-sub">Humain (Paysan) — Actif</p>
+    </div>
+    <button class="close-btn" onclick="window.api.close()">&times;</button>
+  </div>
+
+  <div class="body">
+    <!-- Faction -->
+    <div class="section">
+      <div class="section-title">Faction</div>
+      <div class="faction-row">
+        <button class="faction-btn human" id="btn-human" onclick="selectFaction('human')">
+          <span class="faction-icon">&#x26CF;&#xFE0F;</span>Humain
+        </button>
+        <button class="faction-btn orc" id="btn-orc" onclick="selectFaction('orc')">
+          <span class="faction-icon">&#x1FA93;</span>Orc
+        </button>
+      </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="section">
+      <div class="section-title">Parametres</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Son</div><div class="toggle-sub">Jouer les voix Warcraft</div></div>
+        <button class="toggle" id="toggle-sound" onclick="toggleSound()"></button>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Ecoute active</div><div class="toggle-sub">Recevoir les notifications</div></div>
+        <button class="toggle" id="toggle-watching" onclick="toggleWatching()"></button>
+      </div>
+    </div>
+
+    <!-- Volume -->
+    <div class="section">
+      <div class="section-title">Volume</div>
+      <div class="volume-row">
+        <span>&#128264;</span>
+        <input type="range" min="0" max="100" id="volume-slider" oninput="setVolume(this.value)">
+        <span id="volume-val">70%</span>
+      </div>
+    </div>
+
+    <!-- Test -->
+    <div class="section">
+      <button class="test-btn" onclick="window.api.test()">&#x26A1; Tester la notification</button>
+    </div>
+
+    <!-- History -->
+    <div class="section">
+      <div class="section-title">Historique</div>
+      <div class="history-list" id="history-list"><div class="empty">Aucune notification</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+let config = {
+  faction: params.get('faction') || 'human',
+  volume: parseFloat(params.get('volume') || '0.7'),
+  soundEnabled: params.get('soundEnabled') !== 'false',
+  watching: params.get('watching') !== 'false',
+};
+
+function updateUI() {
+  document.getElementById('btn-human').classList.toggle('active', config.faction === 'human');
+  document.getElementById('btn-orc').classList.toggle('active', config.faction === 'orc');
+  document.getElementById('toggle-sound').classList.toggle('on', config.soundEnabled);
+  document.getElementById('toggle-watching').classList.toggle('on', config.watching);
+  document.getElementById('volume-slider').value = config.volume * 100;
+  document.getElementById('volume-val').textContent = Math.round(config.volume * 100) + '%';
+  document.getElementById('header-sub').textContent =
+    `${config.faction === 'human' ? 'Humain (Paysan)' : 'Orc (Peon)'} — ${config.watching ? 'Actif' : 'En pause'}`;
+  renderSprite();
+}
+
+function selectFaction(f) { config.faction = f; window.api.setFaction(f); updateUI(); }
+function toggleSound() { config.soundEnabled = !config.soundEnabled; window.api.setSound(config.soundEnabled); updateUI(); }
+function toggleWatching() { config.watching = !config.watching; window.api.setWatching(config.watching); updateUI(); }
+function setVolume(v) { config.volume = v / 100; window.api.setVolume(config.volume); document.getElementById('volume-val').textContent = v + '%'; }
+
+// Sprite
+const SPRITES = {
+  human: { palette: ['transparent','#f5c5a3','#6b4226','#2255bb','#665544','#aaaaaa','#222222','#cc8833'],
+    data: ['0000002222000000','0000022222200000','0000021162100000','0000021162100000','0000011111100000','0000001111000000','0000033333300000','0000333333330000','0001333333331000','0001333333331000','0000337773300000','0000334444300000','0000044444400000','0000044004400000','0000044004400000','0000044004400000','0000066006600000'] },
+  orc: { palette: ['transparent','#7ab648','#553322','#884422','#665544','#888888','#ff2222','#cc8833'],
+    data: ['0000002222000000','0000022222200000','0000021162100000','0000021162100000','0000011611100000','0000001111000000','0000033333300000','0000333333330000','0001333333331000','0001333333331000','0000337773300000','0000334444300000','0000044444400000','0000044004400000','0000044004400000','0000044004400000','0000066006600000'] },
+};
+
+function renderSprite() {
+  const s = SPRITES[config.faction] || SPRITES.human;
+  const c = document.getElementById('header-sprite');
+  const ctx = c.getContext('2d');
+  const px = 3;
+  c.width = 16 * px; c.height = s.data.length * px;
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.imageSmoothingEnabled = false;
+  for (let y = 0; y < s.data.length; y++)
+    for (let x = 0; x < s.data[y].length; x++) {
+      const ci = parseInt(s.data[y][x]);
+      if (!ci) continue;
+      ctx.fillStyle = s.palette[ci];
+      ctx.fillRect(x*px, y*px, px, px);
+    }
+}
+
+// History
+function loadHistory() {
+  const history = window.api.getHistory();
+  const el = document.getElementById('history-list');
+  if (!history.length) { el.innerHTML = '<div class="empty">Aucune notification</div>'; return; }
+  el.innerHTML = history.slice(0, 15).map(h => {
+    const t = new Date(h.time);
+    const timeStr = t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = t.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    return `<div class="history-item">
+      <span class="history-faction">${h.faction === 'orc' ? '&#x1FA93;' : '&#x26CF;&#xFE0F;'}</span>
+      <span class="history-project">${h.project}</span>
+      <span class="history-time">${dateStr} ${timeStr}</span>
+    </div>`;
+  }).join('');
+}
+
+// Listen for config updates from main
+window.api.onConfigUpdate((data) => {
+  Object.assign(config, data);
+  updateUI();
+});
+
+updateUI();
+loadHistory();
+</script>
+</body>
+</html>
