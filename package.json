@@ -1,0 +1,22 @@
+{
+  "name": "peonping-overlay",
+  "version": "1.0.0",
+  "description": "Pixel-art desktop overlay for PeonPing — shows animated Warcraft characters when Claude finishes tasks",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.peonping.overlay",
+    "productName": "PeonPing Overlay",
+    "files": ["main.cjs", "preload.cjs", "overlay.html", "tray-icon.png", "package.json"],
+    "win": { "target": ["nsis"], "icon": "tray-icon.png" },
+    "nsis": { "oneClick": true, "runAfterFinish": true }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1"
+  }
+}
