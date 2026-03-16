@@ -84,6 +84,14 @@ function startWatcher() {
       res.end('not found');
     }
   });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log('[PeonPing Overlay] Port 7777 busy, trying 7778...');
+      server.listen(7778, '127.0.0.1');
+    } else {
+      console.error('[PeonPing Overlay] Server error:', err.message);
+    }
+  });
   server.listen(7777, '127.0.0.1', () => {
     console.log('[PeonPing Overlay] Listening on http://127.0.0.1:7777');
   });
@@ -215,15 +223,26 @@ function generateTrayIcon(filepath) {
 }
 
 // ─── App ──────────────────────────────────────────
-app.whenReady().then(() => {
-  loadConfig();
-  createTray();
-  startWatcher();
-  console.log('[PeonPing Overlay] Ready! Faction:', faction);
-  console.log('[PeonPing Overlay] HTTP trigger: POST http://127.0.0.1:7777/notify');
-  console.log('[PeonPing Overlay] File trigger:', path.join(CONFIG_DIR, 'trigger.json'));
-});
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  console.log('[PeonPing Overlay] Another instance is already running. Quitting.');
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // Second instance tried to start — show a test notification instead
+    showOverlay('PeonPing', faction);
+  });
 
-app.on('window-all-closed', (e) => {
-  e.preventDefault(); // Keep running in tray
-});
+  app.whenReady().then(() => {
+    loadConfig();
+    createTray();
+    startWatcher();
+    console.log('[PeonPing Overlay] Ready! Faction:', faction);
+    console.log('[PeonPing Overlay] HTTP trigger: POST http://127.0.0.1:7777/notify');
+    console.log('[PeonPing Overlay] File trigger:', path.join(CONFIG_DIR, 'trigger.json'));
+  });
+
+  app.on('window-all-closed', (e) => {
+    e.preventDefault(); // Keep running in tray
+  });
+}
