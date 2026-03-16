@@ -142,7 +142,7 @@ function setFaction(f) {
     const ppConfig = path.join(os.homedir(), '.claude', 'hooks', 'peon-ping', 'config.json');
     if (fs.existsSync(ppConfig)) {
       const cfg = JSON.parse(fs.readFileSync(ppConfig, 'utf-8'));
-      cfg.active_pack = f === 'orc' ? 'peon' : 'peasant';
+      cfg.active_pack = f === 'orc' ? 'peon_fr' : 'peasant_fr';
       fs.writeFileSync(ppConfig, JSON.stringify(cfg, null, 4));
     }
   } catch {}
