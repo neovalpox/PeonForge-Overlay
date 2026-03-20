@@ -107,6 +107,37 @@ console.log(`[PeonForge] ${characterCatalog.length} characters loaded`);
 // (Side mapping moved above character loading)
 const FOCUS_SCRIPT = path.join(__dirname, 'scripts', 'focus-terminal.ps1');
 const FORGE_CONFIG = path.join(CONFIG_DIR, 'forge.json');
+const AUTH_FILE = path.join(CONFIG_DIR, 'auth.json');
+
+// ─── Auth Token ───────────────────────────────────
+let authToken = '';
+function loadOrCreateAuth() {
+  try {
+    if (fs.existsSync(AUTH_FILE)) {
+      const a = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf-8'));
+      authToken = a.token || '';
+    }
+    if (!authToken) {
+      authToken = require('crypto').randomBytes(32).toString('hex');
+      fs.writeFileSync(AUTH_FILE, JSON.stringify({ token: authToken }, null, 2));
+      console.log('[PeonForge] New auth token generated');
+    }
+  } catch {}
+}
+loadOrCreateAuth();
+
+function checkAuth(req) {
+  // Check Authorization header or ?token= query param
+  const auth = req.headers?.authorization?.replace('Bearer ', '') || '';
+  if (auth === authToken) return true;
+  const url = req.url || '';
+  const tokenMatch = url.match(/[?&]token=([^&]+)/);
+  if (tokenMatch && tokenMatch[1] === authToken) return true;
+  return false;
+}
+
+// List of endpoints that don't require auth (public)
+const PUBLIC_ENDPOINTS = ['/discover', '/status'];
 
 // PeonForge sync
 let forgeToken = null;
@@ -899,8 +930,18 @@ function startServer() {
   serverInstance = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+
+    // Auth check — public endpoints and localhost don't need token
+    const reqPath = (req.url || '').split('?')[0];
+    const isLocal = req.socket?.remoteAddress === '127.0.0.1' || req.socket?.remoteAddress === '::1' || req.socket?.remoteAddress === '::ffff:127.0.0.1';
+    const isPublic = PUBLIC_ENDPOINTS.some(p => reqPath === p) || reqPath === '/event'; // hooks are local
+    if (!isLocal && !isPublic && !checkAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end('{"error":"unauthorized"}');
+      return;
+    }
 
     if (req.method === 'POST' && req.url === '/notify') {
       let body = '';
@@ -1065,9 +1106,20 @@ function startServer() {
 
   // WebSocket server (shares HTTP server, auto-upgrade)
   const wss = new WebSocketServer({ server: serverInstance });
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    // Auth check for WebSocket — token in query string or first message
+    const wsUrl = new URL(req.url || '/', 'http://localhost');
+    const wsToken = wsUrl.searchParams.get('token') || '';
+    const wsLocal = req.socket?.remoteAddress === '127.0.0.1' || req.socket?.remoteAddress === '::1' || req.socket?.remoteAddress === '::ffff:127.0.0.1';
+
+    if (!wsLocal && wsToken !== authToken) {
+      console.log(`[PeonForge] WS rejected: invalid token from ${req.socket?.remoteAddress}`);
+      ws.close(4001, 'unauthorized');
+      return;
+    }
+
     mobileClients.add(ws);
-    console.log(`[PeonForge] Mobile connected (${mobileClients.size} clients)`);
+    console.log(`[PeonForge] Mobile connected (${mobileClients.size} clients) auth=${wsLocal ? 'local' : 'token'}`);
     ws.send(getFullStateForMobile());
     ws.on('message', (raw) => {
       try {
@@ -1379,6 +1431,7 @@ async function openPairing() {
       lanIp, port: 7777,
       tunnelUrl: tUrl || null,
       hostname: os.hostname(),
+      authToken,
     };
 
     // Generate QR code
