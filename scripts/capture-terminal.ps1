@@ -40,7 +40,7 @@ public class TermCapture {
             }
             var encoder = GetEncoder(ImageFormat.Jpeg);
             var encoderParams = new EncoderParameters(1);
-            encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 75L);
+            encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 85L);
             bmp.Save(outPath, encoder, encoderParams);
             return true;
         }

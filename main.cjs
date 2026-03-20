@@ -259,11 +259,12 @@ function getMood() {
 }
 
 function getHappiness() {
-  // Happiness decays: -1 per 5 min since last interaction
+  // Happiness decays: -1 per 10 min since last PET or FEED
   const now = Date.now();
-  const lastInteraction = Math.max(tamagotchi.lastFed, tamagotchi.lastPet, tamagotchi.lastActivity);
-  const minutesSince = (now - lastInteraction) / 60000;
-  const decay = Math.floor(minutesSince / 5);
+  const lastCare = Math.max(tamagotchi.lastFed || 0, tamagotchi.lastPet || 0);
+  if (lastCare === 0) return 50; // never interacted: neutral
+  const minutesSince = (now - lastCare) / 60000;
+  const decay = Math.floor(minutesSince / 10);
   return Math.max(0, Math.min(100, tamagotchi.happiness - decay));
 }
 
@@ -1222,8 +1223,11 @@ function startServer() {
           // Resize terminal to phone proportions (portrait)
           const phoneW = msg.phoneWidth || 1080;
           const phoneH = msg.phoneHeight || 2400;
-          // Scale to fit on screen: use phone aspect ratio but cap at reasonable PC size
-          const targetH = Math.min(1200, phoneH);
+          // Scale to exact phone aspect ratio, using PC screen height as reference
+          const display = screen.getPrimaryDisplay();
+          const pcH = display.workAreaSize.height;
+          // Use 90% of PC screen height, with exact phone aspect ratio
+          const targetH = Math.round(pcH * 0.9);
           const targetW = Math.round(targetH * (phoneW / phoneH));
           if (streamHwnd) {
             exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${streamHwnd} -Width ${targetW} -Height ${targetH}`,
