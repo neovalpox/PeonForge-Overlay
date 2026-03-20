@@ -1206,9 +1206,22 @@ function startServer() {
               if (s.hwnd && s.status !== 'done') { hwnd = s.hwnd; break; }
             }
           }
-          exec(`powershell -NoProfile -ExecutionPolicy Bypass -STA -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
-            { timeout: 3000 },
-            (err, stdout) => { if (stdout) console.log(`[PeonForge] SendKeys: ${stdout.trim()}`); }
+          // Use VBScript with window title for correct terminal targeting
+          const vbsScript = path.join(__dirname, 'scripts', 'send-keys.vbs');
+          // Find the window title from the session being streamed
+          let targetTitle = 'Claude';
+          if (ws._streamHwnd) {
+            for (const s of sessions.values()) {
+              if (s.hwnd === ws._streamHwnd) { targetTitle = s.project || 'Claude'; break; }
+            }
+          } else if (hwnd) {
+            for (const s of sessions.values()) {
+              if (s.hwnd === hwnd) { targetTitle = s.project || 'Claude'; break; }
+            }
+          }
+          console.log(`[PeonForge] SendKeys to "${targetTitle}": ${keys}`);
+          exec(`cscript //nologo "${vbsScript}" "${keys}" "${targetTitle}"`, { timeout: 5000, windowsHide: true },
+            (err) => { if (err) console.log(`[PeonForge] SendKeys error: ${err.message}`); }
           );
         }
         if (msg.type === 'stop-terminal-stream') {
