@@ -801,10 +801,8 @@ function handleHookEvent(data) {
   }
 
   if (hookEvent === 'SessionEnd') {
-    // Accumulate work time
+    // Work time is already accumulated by the mood timer (every 60s)
     if (session) {
-      const workSeconds = Math.floor((now - session.startTime) / 1000);
-      tamagotchi.totalWorkTime += workSeconds;
       session.status = 'done';
       sessions.delete(sessionId);
       saveTamagotchi();
