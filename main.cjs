@@ -1013,7 +1013,7 @@ function startServer() {
           for (const s of sessions.values()) {
             if (s.hwnd && s.status !== 'done') { hwnd = s.hwnd; break; }
           }
-          exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
+          exec(`powershell -NoProfile -ExecutionPolicy Bypass -STA -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
             { timeout: 3000 },
             (err, stdout) => { if (stdout) console.log(`[PeonForge] SendKeys HTTP: ${stdout.trim()}`); }
           );
@@ -1206,7 +1206,7 @@ function startServer() {
               if (s.hwnd && s.status !== 'done') { hwnd = s.hwnd; break; }
             }
           }
-          exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
+          exec(`powershell -NoProfile -ExecutionPolicy Bypass -STA -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
             { timeout: 3000 },
             (err, stdout) => { if (stdout) console.log(`[PeonForge] SendKeys: ${stdout.trim()}`); }
           );
