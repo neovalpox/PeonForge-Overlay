@@ -1001,6 +1001,26 @@ function startServer() {
     } else if (req.method === 'GET' && req.url === '/tamagotchi') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ...getTamagotchiPayload(), mood: getMood(), faction }));
+    } else if (req.method === 'POST' && req.url === '/send-keys') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          const keys = (data.keys || '').replace(/"/g, '').replace(/'/g, "''");
+          const sendKeysScript = path.join(__dirname, 'scripts', 'send-keys.ps1');
+          const { shell } = require('electron');
+          const batFile = path.join(CONFIG_DIR, '_sendkeys.bat');
+          fs.writeFileSync(batFile, `@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${sendKeysScript}" -Keys "${keys}"\r\ndel "%~f0"\r\n`);
+          shell.openPath(batFile);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end('{"ok":true}');
+        } catch {
+          res.writeHead(400);
+          res.end('{"error":"bad json"}');
+        }
+      });
+      return;
     } else if (req.method === 'GET' && req.url?.startsWith('/icon/')) {
       // Serve character icon: /icon/packName.png
       const iconName = req.url.replace('/icon/', '');
