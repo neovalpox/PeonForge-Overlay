@@ -1007,12 +1007,16 @@ function startServer() {
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          const keys = (data.keys || '').replace(/"/g, '').replace(/'/g, "''");
+          const keys = (data.keys || '').replace(/"/g, '');
           const sendKeysScript = path.join(__dirname, 'scripts', 'send-keys.ps1');
-          const { shell } = require('electron');
-          const batFile = path.join(CONFIG_DIR, '_sendkeys.bat');
-          fs.writeFileSync(batFile, `@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${sendKeysScript}" -Keys "${keys}"\r\ndel "%~f0"\r\n`);
-          shell.openPath(batFile);
+          let hwnd = 0;
+          for (const s of sessions.values()) {
+            if (s.hwnd && s.status !== 'done') { hwnd = s.hwnd; break; }
+          }
+          exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
+            { timeout: 3000 },
+            (err, stdout) => { if (stdout) console.log(`[PeonForge] SendKeys HTTP: ${stdout.trim()}`); }
+          );
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end('{"ok":true}');
         } catch {
@@ -1193,11 +1197,19 @@ function startServer() {
         }
         if (msg.type === 'send-keys') {
           const sendKeysScript = path.join(__dirname, 'scripts', 'send-keys.ps1');
-          const keys = (msg.keys || '').replace(/"/g, '').replace(/'/g, "''");
-          const { shell } = require('electron');
-          const batFile = path.join(CONFIG_DIR, '_sendkeys.bat');
-          fs.writeFileSync(batFile, `@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${sendKeysScript}" -Keys "${keys}"\r\ndel "%~f0"\r\n`);
-          shell.openPath(batFile);
+          const keys = (msg.keys || '').replace(/"/g, '');
+          // Find hwnd from the active stream session or any Claude terminal
+          let hwnd = ws._streamHwnd || 0;
+          if (!hwnd) {
+            // Find any active session with a hwnd
+            for (const s of sessions.values()) {
+              if (s.hwnd && s.status !== 'done') { hwnd = s.hwnd; break; }
+            }
+          }
+          exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${sendKeysScript}" -Keys "${keys}" -Hwnd ${hwnd}`,
+            { timeout: 3000 },
+            (err, stdout) => { if (stdout) console.log(`[PeonForge] SendKeys: ${stdout.trim()}`); }
+          );
         }
         if (msg.type === 'stop-terminal-stream') {
           if (ws._streamInterval) {
