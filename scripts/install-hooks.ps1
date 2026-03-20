@@ -60,7 +60,7 @@ if (Test-Path $packsSource) {
 # 3. Patch settings.json
 Write-Host "`n[2/3] Patching Claude Code settings..." -ForegroundColor Yellow
 
-$hookCommand = "powershell -NoProfile -NonInteractive -File `"$HooksTarget\peon.ps1`""
+$hookCommand = "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$HooksTarget\peon.ps1`""
 
 # Define the hooks we need
 $hookEvents = @("Notification", "Stop", "SessionStart", "SessionEnd", "SubagentStart", "PermissionRequest", "PostToolUseFailure", "PreCompact")
