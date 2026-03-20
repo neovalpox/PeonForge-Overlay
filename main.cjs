@@ -1173,11 +1173,11 @@ function startServer() {
         }
         if (msg.type === 'send-keys') {
           const sendKeysScript = path.join(__dirname, 'scripts', 'send-keys.ps1');
-          const keys = (msg.keys || '').replace(/"/g, '');
-          const pid = msg.pid || '';
-          const pidArg = pid ? `-Pid ${pid}` : '';
-          exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${sendKeysScript}" -Keys "${keys}" ${pidArg}`,
-            { timeout: 3000 });
+          const keys = (msg.keys || '').replace(/"/g, '').replace(/'/g, "''");
+          const { shell } = require('electron');
+          const batFile = path.join(CONFIG_DIR, '_sendkeys.bat');
+          fs.writeFileSync(batFile, `@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${sendKeysScript}" -Keys "${keys}"\r\ndel "%~f0"\r\n`);
+          shell.openPath(batFile);
         }
         if (msg.type === 'stop-terminal-stream') {
           if (ws._streamInterval) {
