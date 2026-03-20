@@ -6,9 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Windows desktop notification overlay built with Electron. It displays animated Warcraft III characters (Peasant/Peon) with French voice lines when Claude Code finishes tasks. Runs as a system tray app with an HTTP API. Integrates with Claude Code hooks via `peon.ps1` which forwards all hook events to the overlay. Includes a mobile companion app (Flutter/Android) and a web leaderboard (peonforge.ch).
 
+## Setup
+
+```
+npm install        # Install Node dependencies
+npm run setup      # Install all prerequisites (cloudflared, ffplay)
+```
+
+### Prerequisites
+
+- **Node.js** + **npm**
+- **cloudflared** — Required for remote mobile access over internet (Cloudflare Tunnel). Install: `winget install Cloudflare.cloudflared`
+- **ffplay** (optional) — For volume-controlled sound playback. Install: `winget install Gyan.FFmpeg`
+
+The `npm run setup` script checks and installs these automatically via winget.
+
 ## Commands
 
 - `npm start` — Run the app in dev mode (launches Electron)
+- `npm run setup` — Install prerequisites (cloudflared, ffplay)
 - `npm run dist` — Build a Windows NSIS installer to `dist/`
 
 No test framework or linter is configured.
