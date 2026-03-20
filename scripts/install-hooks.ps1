@@ -94,12 +94,20 @@ foreach ($eventName in $hookEvents) {
         $settings.hooks | Add-Member -NotePropertyName $eventName -NotePropertyValue @($hookEntry)
         $added++
     } else {
-        # Check if our hook is already there
+        # Check if our hook is already there, and update the command if needed
         $existing = $settings.hooks.$eventName
         $found = $false
         foreach ($entry in $existing) {
             foreach ($h in $entry.hooks) {
-                if ($h.command -like "*peon.ps1*") { $found = $true; break }
+                if ($h.command -like "*peon.ps1*") {
+                    $found = $true
+                    # Update command to latest version (fixes ExecutionPolicy etc.)
+                    if ($h.command -ne $hookCommand) {
+                        $h.command = $hookCommand
+                        $added++
+                    }
+                    break
+                }
             }
             if ($found) { break }
         }
