@@ -1,22 +1,55 @@
 {
-  "name": "peonping-overlay",
+  "name": "peonforge",
   "version": "1.0.0",
-  "description": "Pixel-art desktop overlay for PeonPing — shows animated Warcraft characters when Claude finishes tasks",
+  "description": "PeonForge — Ton compagnon Warcraft pour Claude Code",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win"
   },
   "build": {
-    "appId": "com.peonping.overlay",
-    "productName": "PeonPing Overlay",
-    "files": ["main.cjs", "preload.cjs", "overlay.html", "tray-icon.png", "package.json"],
-    "win": { "target": ["nsis"], "icon": "tray-icon.png" },
-    "nsis": { "oneClick": true, "runAfterFinish": true }
+    "appId": "com.peonforge.overlay",
+    "productName": "PeonForge",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "preload-companion.cjs",
+      "preload-pairing.cjs",
+      "preload-progress.cjs",
+      "preload-settings.cjs",
+      "overlay.html",
+      "companion.html",
+      "pairing.html",
+      "progress.html",
+      "settings.html",
+      "scripts/**",
+      "assets/**",
+      "app-icon.png",
+      "app-icon.ico",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "app-icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "runAfterFinish": true,
+      "installerIcon": "app-icon.ico",
+      "uninstallerIcon": "app-icon.ico",
+      "shortcutName": "PeonForge"
+    }
   },
-  "dependencies": {},
+  "dependencies": {
+    "casclib": "^1.0.4",
+    "localtunnel": "^2.0.2",
+    "qrcode": "^1.5.4",
+    "ws": "^8.19.0"
+  },
   "devDependencies": {
-    "electron": "^41.0.2",
+    "electron": "^41.0.3",
     "electron-builder": "^26.8.1"
   }
 }

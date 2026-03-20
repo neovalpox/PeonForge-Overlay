@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+html, body { background: transparent; overflow: hidden; width: 100%; height: 100%; }
+body { display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; }
+
+/* ─── Main Card (WC3 Unit Card style) ─── */
+.card {
+  width: 272px;
+  background: linear-gradient(180deg, rgba(22,18,10,0.96) 0%, rgba(14,12,8,0.98) 100%);
+  border: 2px solid #8b6914;
+  border-radius: 10px;
+  -webkit-app-region: drag;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,215,0,0.06);
+  overflow: hidden;
+  animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(40px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Drag Handle ─── */
+.drag-handle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px;
+  background: linear-gradient(90deg, rgba(139,105,20,0.15), transparent);
+  border-bottom: 1px solid rgba(139,105,20,0.2);
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+.drag-title { font: 600 10px 'Segoe UI', sans-serif; color: #7a7055; text-transform: uppercase; letter-spacing: 1px; }
+.drag-level {
+  font: 700 11px 'Georgia', serif; color: #dfbd5e;
+  text-shadow: 0 0 6px rgba(223,189,94,0.3);
+  -webkit-app-region: no-drag;
+}
+
+/* ─── Character Section ─── */
+.char-section { display: flex; gap: 10px; padding: 10px 10px 6px; }
+
+/* Portrait */
+.portrait-wrap { position: relative; flex-shrink: 0; }
+.portrait-frame {
+  width: 60px; height: 60px;
+  border: 2px solid #8b6914;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 8px rgba(139,105,20,0.3);
+  transition: filter 0.5s, box-shadow 0.5s;
+}
+.portrait-frame img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+/* Mood effects */
+.mood-idle .portrait-frame { animation: breathe 3s ease infinite; }
+.mood-working .portrait-frame { box-shadow: 0 0 12px rgba(100,200,100,0.4); animation: work 1s ease infinite; }
+.mood-happy .portrait-frame { box-shadow: 0 0 16px rgba(255,215,0,0.6); animation: celebrate 0.6s ease; }
+.mood-error .portrait-frame { box-shadow: 0 0 12px rgba(255,60,60,0.5); animation: shake 0.4s ease; }
+.mood-sleeping .portrait-frame { filter: grayscale(0.6) brightness(0.6); animation: sleepBob 4s ease infinite; }
+
+@keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+@keyframes work { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes celebrate { 0% { transform: scale(1); } 30% { transform: scale(1.1); } 60% { transform: scale(0.95); } 100% { transform: scale(1); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+@keyframes sleepBob { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(1px) rotate(1deg); } }
+
+/* Level-up flash */
+.level-up .portrait-frame {
+  animation: levelUpFlash 1.5s ease !important;
+}
+@keyframes levelUpFlash {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.8); }
+  30% { box-shadow: 0 0 40px 15px rgba(255,215,0,0.6); }
+  100% { box-shadow: 0 0 8px rgba(139,105,20,0.3); }
+}
+
+/* Spinner ring during work */
+.work-ring {
+  position: absolute; inset: -4px;
+  border: 2px solid transparent;
+  border-top-color: #dfbd5e;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.mood-working .work-ring { opacity: 1; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Stats */
+.stats { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+.char-name {
+  font: 700 13px 'Georgia', serif;
+  color: #dfbd5e;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.xp-row { display: flex; align-items: center; gap: 6px; }
+.xp-track {
+  flex: 1; height: 8px;
+  background: rgba(139,105,20,0.15);
+  border-radius: 4px;
+  border: 1px solid rgba(139,105,20,0.3);
+  overflow: hidden;
+}
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b6914, #dfbd5e);
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 4px rgba(223,189,94,0.4);
+  width: 0%;
+}
+.xp-text { font: 600 9px 'Segoe UI', sans-serif; color: #7a7055; white-space: nowrap; }
+.gold-row {
+  display: flex; align-items: center; gap: 4px;
+  font: 600 11px 'Segoe UI', sans-serif; color: #ffd700;
+  text-shadow: 0 0 4px rgba(255,215,0,0.2);
+}
+.stats-row {
+  display: flex; gap: 8px;
+  font: 10px 'Segoe UI', sans-serif; color: #5a5040;
+}
+
+/* ─── Speech Bubble ─── */
+.speech-wrap { padding: 0 10px 6px; }
+.speech {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,215,0,0.1);
+  border-radius: 8px;
+  padding: 5px 10px;
+  position: relative;
+  font: italic 11px 'Segoe UI', sans-serif;
+  color: #c8b88a;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+  animation: speechIn 0.3s ease;
+  min-height: 22px;
+}
+.speech::before {
+  content: ''; position: absolute;
+  left: 24px; top: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid rgba(255,215,0,0.1);
+}
+@keyframes speechIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── Sessions Bar (multi-session) ─── */
+.sessions-bar {
+  display: none;
+  border-top: 1px solid rgba(139,105,20,0.15);
+  padding: 6px 10px;
+  gap: 6px;
+  overflow-x: auto;
+}
+.sessions-bar.visible { display: flex; }
+.sessions-bar::-webkit-scrollbar { height: 3px; }
+.sessions-bar::-webkit-scrollbar-thumb { background: rgba(139,105,20,0.3); border-radius: 2px; }
+
+.sessions-bar { -webkit-app-region: no-drag; }
+.session-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 8px 4px 4px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  animation: chipIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.session-chip:hover { background: rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.2); }
+@keyframes chipIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+.chip-portrait {
+  width: 28px; height: 28px;
+  border-radius: 5px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+.chip-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.chip-portrait::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--chip-color, #8b6914);
+  box-shadow: 0 0 4px var(--chip-color, rgba(139,105,20,0.3));
+}
+
+.chip-info { min-width: 0; }
+.chip-project {
+  font: 600 10px 'Segoe UI', sans-serif;
+  color: #c8b88a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 90px;
+}
+.chip-status {
+  display: flex; align-items: center; gap: 3px;
+  font: 9px 'Segoe UI', sans-serif; color: #5a5040;
+}
+.chip-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #5aff5a;
+  animation: chipPulse 1.5s ease infinite;
+}
+@keyframes chipPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+/* ─── Activity Section ─── */
+.activity-section {
+  border-top: 1px solid rgba(139,105,20,0.15);
+  padding: 6px 0 0;
+}
+.activity-title {
+  font: 600 9px 'Segoe UI', sans-serif;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: #5a5040; padding: 0 10px 4px;
+}
+.activity-list { max-height: 108px; overflow-y: auto; }
+.activity-list::-webkit-scrollbar { width: 3px; }
+.activity-list::-webkit-scrollbar-thumb { background: rgba(139,105,20,0.3); border-radius: 2px; }
+
+.activity-list { -webkit-app-region: no-drag; }
+.activity-entry {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  animation: entryIn 0.25s ease;
+  -webkit-app-region: no-drag;
+}
+.activity-entry:hover { background: rgba(255,215,0,0.04); }
+@keyframes entryIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+.entry-icon {
+  width: 18px; height: 18px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0;
+}
+.entry-info { flex: 1; min-width: 0; }
+.entry-label { font: 11px 'Segoe UI', sans-serif; color: #c8b88a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-meta { font: 9px 'Segoe UI', sans-serif; color: #5a5040; }
+.entry-arrow { color: #5a5040; font-size: 10px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.activity-entry:hover .entry-arrow { opacity: 1; }
+
+/* Event type colors */
+.icon-session    { background: rgba(100,200,255,0.12); border: 1px solid rgba(100,200,255,0.3); color: #64c8ff; }
+.icon-agent      { background: rgba(223,189,94,0.12);  border: 1px solid rgba(223,189,94,0.3);  color: #dfbd5e; }
+.icon-permission { background: rgba(180,130,255,0.12); border: 1px solid rgba(180,130,255,0.3); color: #b482ff; }
+.icon-error      { background: rgba(255,80,80,0.12);   border: 1px solid rgba(255,80,80,0.3);   color: #ff5050; }
+.icon-compact    { background: rgba(255,200,50,0.12);  border: 1px solid rgba(255,200,50,0.3);  color: #ffc832; }
+.icon-prompt     { background: rgba(90,255,90,0.12);   border: 1px solid rgba(90,255,90,0.3);   color: #5aff5a; }
+.icon-notif      { background: rgba(200,184,138,0.1);  border: 1px solid rgba(200,184,138,0.2); color: #c8b88a; }
+.icon-complete   { background: rgba(90,255,90,0.15);   border: 1px solid rgba(90,255,90,0.4);   color: #5aff5a; }
+
+/* ─── Session Progress Bar ─── */
+.session-bar {
+  display: none; /* hidden when no active session */
+  align-items: center; gap: 8px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid rgba(139,105,20,0.1);
+}
+.session-bar.active { display: flex; }
+.session-track {
+  flex: 1; height: 4px;
+  background: rgba(139,105,20,0.12);
+  border-radius: 2px; overflow: hidden;
+}
+.session-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b6914, #dfbd5e);
+  width: 0%; transition: width 0.5s ease;
+  border-radius: 2px;
+  position: relative;
+}
+.session-fill::after {
+  content: ''; position: absolute; right: 0; top: -1px; bottom: -1px; width: 8px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  animation: pulse 1.5s ease infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
+.session-time {
+  font: 600 10px 'Segoe UI', sans-serif; color: #7a7055;
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+
+/* ─── Empty state ─── */
+.empty { text-align: center; padding: 10px; font: 11px 'Segoe UI', sans-serif; color: #3a3828; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <!-- Drag Handle -->
+  <div class="drag-handle">
+    <span class="drag-title">PeonForge</span>
+    <span class="drag-level" id="level-badge">Niv. 1</span>
+  </div>
+
+  <!-- Character Section -->
+  <div class="char-section" id="char-section">
+    <div class="portrait-wrap">
+      <div class="work-ring"></div>
+      <div class="portrait-frame">
+        <img id="portrait" src="" alt="">
+      </div>
+    </div>
+    <div class="stats">
+      <div class="char-name" id="char-name">Paysan</div>
+      <div class="xp-row">
+        <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+        <span class="xp-text" id="xp-text">0 XP</span>
+      </div>
+      <div class="gold-row">&#x1FA99; <span id="gold-val">0</span></div>
+      <div class="stats-row">
+        <span id="tasks-stat">0 taches</span>
+        <span>·</span>
+        <span id="time-stat">0h</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Speech Bubble -->
+  <div class="speech-wrap">
+    <div class="speech" id="speech">J'attends vos ordres, sire.</div>
+  </div>
+
+  <!-- Sessions Bar (shown when multiple sessions active) -->
+  <div class="sessions-bar" id="sessions-bar"></div>
+
+  <!-- Activity Log -->
+  <div class="activity-section">
+    <div class="activity-title">Activite</div>
+    <div class="activity-list" id="activity-list">
+      <div class="empty">Aucune activite recente</div>
+    </div>
+  </div>
+
+  <!-- Session Progress -->
+  <div class="session-bar" id="session-bar">
+    <div class="session-track"><div class="session-fill" id="session-fill"></div></div>
+    <span class="session-time" id="session-time">0:00</span>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+let faction = decodeURIComponent(params.get('faction') || 'human');
+let currentMood = 'idle';
+let sessionStartTime = null;
+let sessionEventCount = 0;
+let previousLevel = 1;
+
+// ─── Faction Data ───
+const FACTION = {
+  human: {
+    name: 'Paysan',
+    gif: 'assets/peasant.gif',
+    speeches: {
+      idle: ["J'attends vos ordres, sire.", "Du travail ?", "Pret !", "Oui milord ?", "Que puis-je faire ?"],
+      working: ["J'y travaille !", "Ca avance, sire !", "En construction...", "Plus de travail !"],
+      happy: ["Travail termine !", "A vos ordres !", "Mission accomplie !", "C'est fait, sire !"],
+      error: ["Ca marche pas !", "On a un souci...", "Oups..."],
+      sleeping: ["Zzz...", "*baille*", "..."],
+      agent: ["J'envoie un eclaireur !", "Renforts en route !", "Un allie arrive !"],
+      permission: ["J'ai besoin d'ordres !", "Qu'est-ce que je fais ?", "Instructions ?"],
+      complete: ["Travail termine !", "Mission accomplie, sire !", "C'est pret !"],
+      compact: ["Je range l'atelier...", "On fait de la place !"],
+    }
+  },
+  orc: {
+    name: 'Peon',
+    gif: 'assets/peon.gif',
+    speeches: {
+      idle: ["Zug zug.", "Dabu ?", "Moe pret.", "Quoi faire ?", "Moe attend."],
+      working: ["Moe travaille !", "Zug zug !", "Dabu !", "Travail travail..."],
+      happy: ["Travail termine !", "Dabu !", "C'est bon, chef !", "Moe a fini !"],
+      error: ["Aie !", "Pas bon...", "Moe pas content !"],
+      sleeping: ["Zzz...", "*grogne*", "..."],
+      agent: ["Moe appelle copain !", "Renfort arrive !", "Autre peon vient !"],
+      permission: ["Chef ? Quoi faire ?", "Moe attend ordres.", "Hein ?"],
+      complete: ["Moe a fini, chef !", "Zug zug, c'est bon !", "Travail termine !"],
+      compact: ["Moe range...", "Moins de bazar !"],
+    }
+  }
+};
+
+// ─── Event Meta ───
+const EVENT_META = {
+  'SessionStart':       { icon: '▶', iconCls: 'icon-session',    label: 'Session demarree',  speechKey: 'working' },
+  'SubagentStart':      { icon: '⚙', iconCls: 'icon-agent',      label: 'Agent lance',       speechKey: 'agent' },
+  'PermissionRequest':  { icon: '🔑', iconCls: 'icon-permission', label: 'Permission requise', speechKey: 'permission' },
+  'PostToolUseFailure': { icon: '✖', iconCls: 'icon-error',      label: 'Erreur outil',      speechKey: 'error' },
+  'PreCompact':         { icon: '📦', iconCls: 'icon-compact',    label: 'Compactage memoire', speechKey: 'compact' },
+  'Stop':               { icon: '✔', iconCls: 'icon-complete',   label: 'Tache terminee',    speechKey: 'complete' },
+  'SubagentStop':       { icon: '✔', iconCls: 'icon-agent',      label: 'Agent termine',     speechKey: 'complete' },
+  'Notification':       { icon: '🔔', iconCls: 'icon-notif',      label: 'Notification',      speechKey: 'working' },
+  'UserPromptSubmit':   { icon: '➤', iconCls: 'icon-prompt',     label: 'Prompt envoye',     speechKey: 'working' },
+  'SessionEnd':         { icon: '■', iconCls: 'icon-session',    label: 'Session terminee',  speechKey: 'idle' },
+};
+
+// ─── Init ───
+const fdata = FACTION[faction] || FACTION.human;
+document.getElementById('portrait').src = fdata.gif;
+document.getElementById('char-name').textContent = fdata.name;
+
+// Activities log (local state)
+const activities = [];
+const MAX_ACTIVITIES = 20;
+
+// Sessions tracking (for multi-session display)
+let activeSessions = [];
+const sessionCharacters = {}; // sessionId → character
+
+// ─── Rendering ───
+function setMood(mood) {
+  if (mood === currentMood) return;
+  const section = document.getElementById('char-section');
+  section.className = `char-section mood-${mood}`;
+  currentMood = mood;
+}
+
+function setSpeech(text) {
+  const el = document.getElementById('speech');
+  el.textContent = text;
+  el.style.animation = 'none';
+  el.offsetHeight; // force reflow
+  el.style.animation = '';
+}
+
+function randomSpeech(key) {
+  const lines = fdata.speeches[key] || fdata.speeches.idle;
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function updateTamagotchi(tama) {
+  if (!tama) return;
+  const level = tama.level || 1;
+  document.getElementById('level-badge').textContent = `Niv. ${level}`;
+  document.getElementById('xp-text').textContent = `${tama.xpInLevel}/${tama.xpForLevel} XP`;
+  document.getElementById('xp-fill').style.width = `${Math.round((tama.xpInLevel / tama.xpForLevel) * 100)}%`;
+  document.getElementById('gold-val').textContent = tama.gold || 0;
+  document.getElementById('tasks-stat').textContent = `${tama.tasksCompleted || 0} taches`;
+
+  const hours = Math.floor((tama.totalWorkTime || 0) / 3600);
+  const mins = Math.floor(((tama.totalWorkTime || 0) % 3600) / 60);
+  document.getElementById('time-stat').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+
+  // Level up effect
+  if (level > previousLevel) {
+    document.getElementById('char-section').classList.add('level-up');
+    setSpeech(`Niveau ${level} ! ` + randomSpeech('happy'));
+    setTimeout(() => document.getElementById('char-section').classList.remove('level-up'), 2000);
+  }
+  previousLevel = level;
+}
+
+function addActivity(event, project, sessionId, character) {
+  const meta = EVENT_META[event] || { icon: '•', iconCls: 'icon-notif', label: event, speechKey: 'working' };
+  const now = new Date();
+  const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  // Store character for this session
+  if (character && sessionId) sessionCharacters[sessionId] = character;
+  const charForEntry = (sessionId && sessionCharacters[sessionId]) || null;
+
+  activities.unshift({ event, project, sessionId, time, meta, character: charForEntry });
+  if (activities.length > MAX_ACTIVITIES) activities.length = MAX_ACTIVITIES;
+
+  // Update main portrait to latest event's character
+  if (charForEntry) {
+    document.getElementById('portrait').src = charForEntry.gif;
+    document.getElementById('char-name').textContent = charForEntry.name;
+  }
+
+  renderActivities();
+  setSpeech(randomSpeech(meta.speechKey));
+}
+
+function renderActivities() {
+  const list = document.getElementById('activity-list');
+  if (activities.length === 0) {
+    list.innerHTML = '<div class="empty">Aucune activite recente</div>';
+    return;
+  }
+  list.innerHTML = activities.slice(0, 8).map((a, i) => {
+    const charImg = a.character
+      ? `<img src="${a.character.gif}" style="width:14px;height:14px;border-radius:3px;vertical-align:middle;margin-right:2px;">`
+      : '';
+    return `<div class="activity-entry" data-session="${a.sessionId || ''}" data-project="${a.project || ''}" onclick="focusEntry(this)" style="opacity:${Math.max(0.4, 1 - i * 0.08)}">` +
+      `<div class="entry-icon ${a.meta.iconCls}">${a.meta.icon}</div>` +
+      `<div class="entry-info">` +
+        `<div class="entry-label">${a.meta.label}</div>` +
+        `<div class="entry-meta">${a.time} · ${charImg}${a.project || 'Projet'}</div>` +
+      `</div>` +
+      `<div class="entry-arrow">▸</div>` +
+    `</div>`;
+  }).join('');
+}
+
+function renderSessions(sessionsList) {
+  activeSessions = sessionsList || [];
+  const bar = document.getElementById('sessions-bar');
+
+  if (activeSessions.length <= 1) {
+    bar.classList.remove('visible');
+    return;
+  }
+
+  bar.classList.add('visible');
+  bar.innerHTML = activeSessions.map(s => {
+    const c = s.character || { gif: 'assets/peasant.gif', color: '#8b6914', name: 'Paysan' };
+    const elapsed = Math.floor((Date.now() - s.startTime) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const ss = String(elapsed % 60).padStart(2, '0');
+    return `<div class="session-chip" onclick="window.api?.focusSession('${s.id}')" title="${s.project}">` +
+      `<div class="chip-portrait" style="--chip-color:${c.color}">` +
+        `<img src="${c.gif}">` +
+      `</div>` +
+      `<div class="chip-info">` +
+        `<div class="chip-project">${s.project}</div>` +
+        `<div class="chip-status"><div class="chip-dot"></div> ${m}:${ss}</div>` +
+      `</div>` +
+    `</div>`;
+  }).join('');
+}
+
+function focusEntry(el) {
+  const sessionId = el.dataset.session;
+  if (sessionId) window.api?.focusSession(sessionId);
+}
+
+// ─── Session Timer ───
+let timerInterval = null;
+function startTimer() {
+  sessionStartTime = Date.now();
+  sessionEventCount = 0;
+  const bar = document.getElementById('session-bar');
+  bar.classList.add('active');
+  updateTimer();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateTimer() {
+  if (!sessionStartTime) return;
+  const s = Math.floor((Date.now() - sessionStartTime) / 1000);
+  const m = Math.floor(s / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  document.getElementById('session-time').textContent = `${m}:${ss}`;
+}
+
+function stopTimer() {
+  document.getElementById('session-fill').style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('session-bar').classList.remove('active');
+    document.getElementById('session-fill').style.width = '0%';
+    sessionStartTime = null;
+    sessionEventCount = 0;
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }, 1500);
+}
+
+function tickProgress() {
+  sessionEventCount++;
+  const pct = Math.min(sessionEventCount * 12, 95);
+  document.getElementById('session-fill').style.width = pct + '%';
+}
+
+// ─── Idle Speech Rotation ───
+let idleSpeechInterval = null;
+function startIdleSpeech() {
+  if (idleSpeechInterval) clearInterval(idleSpeechInterval);
+  idleSpeechInterval = setInterval(() => {
+    if (currentMood === 'idle' || currentMood === 'sleeping') {
+      setSpeech(randomSpeech(currentMood));
+    }
+  }, 15000);
+}
+startIdleSpeech();
+
+// Refresh sessions bar timers every 10s
+setInterval(() => {
+  if (activeSessions.length > 1) renderSessions(activeSessions);
+}, 10000);
+
+// ─── IPC Updates from main ───
+window.api?.onUpdate((data) => {
+  // Faction change
+  if (data.faction && data.faction !== faction) {
+    faction = data.faction;
+    const fd = FACTION[faction] || FACTION.human;
+    document.getElementById('portrait').src = fd.gif;
+    document.getElementById('char-name').textContent = fd.name;
+    Object.assign(fdata, fd); // update reference... actually need to reassign
+    // Can't reassign const, so we'll read from FACTION[faction] in randomSpeech
+  }
+
+  // Mood
+  if (data.mood) setMood(data.mood);
+
+  // Tamagotchi stats
+  if (data.tamagotchi) updateTamagotchi(data.tamagotchi);
+
+  // Sessions bar
+  if (data.sessions) renderSessions(data.sessions);
+
+  // New event
+  if (data.event) {
+    addActivity(data.event.type, data.event.project, data.event.sessionId, data.event.character);
+    tickProgress();
+
+    if (data.event.type === 'SessionStart') {
+      startTimer();
+      setMood('working');
+    } else if (data.event.type === 'Stop' || data.event.type === 'SessionEnd') {
+      stopTimer();
+    } else if (data.event.type === 'PostToolUseFailure') {
+      setMood('error');
+      setTimeout(() => { if (sessionStartTime) setMood('working'); else setMood('idle'); }, 3000);
+    }
+  }
+
+  // Initial activities (on window load)
+  if (data.recentEvents && activities.length === 0) {
+    data.recentEvents.forEach(e => {
+      const meta = EVENT_META[e.type] || { icon: '•', iconCls: 'icon-notif', label: e.type };
+      activities.push({
+        event: e.type, project: e.project, sessionId: e.sessionId,
+        time: new Date(e.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        meta
+      });
+    });
+    renderActivities();
+  }
+});
+
+// Fix randomSpeech to use current faction
+function randomSpeech(key) {
+  const fd = FACTION[faction] || FACTION.human;
+  const lines = fd.speeches[key] || fd.speeches.idle;
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+</script>
+</body>
+</html>

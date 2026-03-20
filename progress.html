@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: transparent; overflow: hidden; width: 100%; height: 100%; }
+body { display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; cursor: pointer; }
+
+.progress-bar {
+  display: flex; align-items: stretch; gap: 0;
+  background: linear-gradient(180deg, rgba(20,16,8,0.95) 0%, rgba(12,10,6,0.98) 100%);
+  border: 1.5px solid #8b6914;
+  border-radius: 10px;
+  min-width: 360px; max-width: 400px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,215,0,0.06);
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+.closing .progress-bar { animation: slideOut 0.3s ease forwards; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes slideOut {
+  to { opacity: 0; transform: translateY(30px) scale(0.95); }
+}
+
+/* Portrait */
+.portrait-col {
+  width: 52px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 4px 8px 8px;
+  position: relative;
+}
+.portrait-mini {
+  width: 40px; height: 40px;
+  border: 1.5px solid #8b6914;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 6px rgba(139,105,20,0.4);
+  position: relative;
+}
+.portrait-mini img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.portrait-mini::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* Working spinner around portrait */
+.portrait-ring {
+  position: absolute; inset: 2px;
+  border: 2px solid transparent;
+  border-top-color: #dfbd5e;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Content */
+.content { flex: 1; padding: 8px 12px 6px 8px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+/* Header row */
+.header-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.project-name {
+  font-family: 'Georgia', serif;
+  font-size: 12px; font-weight: 700;
+  color: #dfbd5e;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.elapsed {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 10px; color: #7a7055;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Event icons row */
+.events-row { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+.event-pip {
+  width: 16px; height: 16px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; line-height: 1;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: pipIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes pipIn {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Event type colors */
+.pip-session   { background: rgba(100,200,255,0.15); border: 1px solid rgba(100,200,255,0.4); color: #64c8ff; }
+.pip-agent     { background: rgba(223,189,94,0.15);  border: 1px solid rgba(223,189,94,0.4);  color: #dfbd5e; }
+.pip-permission{ background: rgba(180,130,255,0.15); border: 1px solid rgba(180,130,255,0.4); color: #b482ff; }
+.pip-error     { background: rgba(255,80,80,0.15);   border: 1px solid rgba(255,80,80,0.4);   color: #ff5050; }
+.pip-compact   { background: rgba(255,200,50,0.15);  border: 1px solid rgba(255,200,50,0.4);  color: #ffc832; }
+.pip-prompt    { background: rgba(90,255,90,0.15);   border: 1px solid rgba(90,255,90,0.4);   color: #5aff5a; }
+.pip-notif     { background: rgba(200,184,138,0.12); border: 1px solid rgba(200,184,138,0.3); color: #c8b88a; }
+
+/* Pulse on latest pip */
+.pip-latest {
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Mini log */
+.log { display: flex; flex-direction: column; gap: 1px; }
+.log-entry {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 10px; color: #7a7055;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
+  animation: logIn 0.2s ease;
+}
+.log-entry:first-child { color: #c8b88a; }
+@keyframes logIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.log-time { color: #5a5040; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.log-icon { margin-right: 2px; }
+
+/* Bottom progress track */
+.track {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: rgba(139,105,20,0.15);
+}
+.track-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b6914, #dfbd5e);
+  width: 0%;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 4px rgba(223,189,94,0.4);
+}
+.track-pulse {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 20px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  animation: trackPulse 1.5s ease infinite;
+}
+@keyframes trackPulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+</style>
+</head>
+<body onclick="window.api?.focusTerminal()">
+<div class="progress-bar" id="bar">
+  <div class="portrait-col">
+    <div class="portrait-ring"></div>
+    <div class="portrait-mini">
+      <img id="portrait" src="" alt="">
+    </div>
+  </div>
+  <div class="content">
+    <div class="header-row">
+      <span class="project-name" id="project">Projet</span>
+      <span class="elapsed" id="elapsed">0:00</span>
+    </div>
+    <div class="events-row" id="events-row"></div>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="track">
+    <div class="track-fill" id="track-fill"><div class="track-pulse"></div></div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const faction = decodeURIComponent(params.get('faction') || 'human');
+
+// Portrait
+const portrait = document.getElementById('portrait');
+portrait.src = faction === 'orc' ? 'assets/peon.gif' : 'assets/peasant.gif';
+portrait.onerror = () => { portrait.src = 'assets/peasant.gif'; };
+
+// Project name
+document.getElementById('project').textContent =
+  decodeURIComponent(params.get('project') || 'Projet');
+
+// Timer
+let startTime = Date.now();
+const elapsedEl = document.getElementById('elapsed');
+setInterval(() => {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  elapsedEl.textContent = `${m}:${ss}`;
+}, 1000);
+
+// Event config: icon, CSS class, label
+const EVENT_META = {
+  'SessionStart':       { icon: '▶', cls: 'pip-session',    label: 'Session demarree' },
+  'SubagentStart':      { icon: '⚙', cls: 'pip-agent',      label: 'Agent lance' },
+  'PermissionRequest':  { icon: '🔑', cls: 'pip-permission', label: 'Permission requise' },
+  'PostToolUseFailure': { icon: '✖', cls: 'pip-error',      label: 'Erreur outil' },
+  'PreCompact':         { icon: '📦', cls: 'pip-compact',    label: 'Compactage memoire' },
+  'Stop':               { icon: '✔', cls: 'pip-session',    label: 'Tache terminee !' },
+  'Notification':       { icon: '🔔', cls: 'pip-notif',      label: 'Notification' },
+  'UserPromptSubmit':   { icon: '➤', cls: 'pip-prompt',     label: 'Prompt envoye' },
+  'SessionEnd':         { icon: '■', cls: 'pip-session',    label: 'Session terminee' },
+};
+
+const logEntries = [];
+let eventCount = 0;
+const eventsRow = document.getElementById('events-row');
+const logEl = document.getElementById('log');
+const trackFill = document.getElementById('track-fill');
+
+function getTimestamp() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  return `${m}:${ss}`;
+}
+
+function addEvent(eventName) {
+  const meta = EVENT_META[eventName] || { icon: '•', cls: 'pip-notif', label: eventName };
+  eventCount++;
+
+  // Remove latest highlight from previous pip
+  const prev = eventsRow.querySelector('.pip-latest');
+  if (prev) prev.classList.remove('pip-latest');
+
+  // Add colored pip
+  const pip = document.createElement('div');
+  pip.className = `event-pip ${meta.cls} pip-latest`;
+  pip.textContent = meta.icon;
+  pip.title = meta.label;
+  eventsRow.appendChild(pip);
+
+  // Add log entry
+  const ts = getTimestamp();
+  logEntries.unshift({ time: ts, icon: meta.icon, label: meta.label, cls: meta.cls });
+
+  // Render last 3 log entries
+  logEl.innerHTML = logEntries.slice(0, 3).map((e, i) =>
+    `<div class="log-entry" style="${i > 0 ? 'opacity:' + (0.6 - i * 0.15) : ''}">` +
+    `<span class="log-time">${e.time}</span>` +
+    `<span class="log-icon">${e.icon}</span>` +
+    `${e.label}</div>`
+  ).join('');
+
+  // Progress bar: fill based on event count (max ~10 events for full bar)
+  const pct = Math.min(eventCount * 12, 95);
+  trackFill.style.width = pct + '%';
+}
+
+// Initial session start event
+addEvent('SessionStart');
+
+// Updates from main process
+window.api?.onUpdate((data) => {
+  if (data.event) {
+    addEvent(data.event);
+  }
+  if (data.project) {
+    document.getElementById('project').textContent = data.project;
+  }
+  if (data.close) {
+    // Fill bar to 100% before closing
+    trackFill.style.width = '100%';
+    setTimeout(() => {
+      document.body.classList.add('closing');
+      setTimeout(() => window.api?.close(), 400);
+    }, 400);
+  }
+});
+</script>
+</body>
+</html>

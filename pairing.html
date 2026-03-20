@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: transparent; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; }
+body { display: flex; align-items: center; justify-content: center; }
+
+.card {
+  width: 340px;
+  background: rgba(14,12,8,0.97);
+  border: 2px solid #8b6914;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } }
+
+h1 { font-family: Georgia, serif; font-size: 18px; color: #dfbd5e; margin-bottom: 4px; }
+.sub { font-size: 12px; color: #7a7055; margin-bottom: 16px; }
+
+.qr-wrap {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+.qr-wrap img { width: 200px; height: 200px; display: block; image-rendering: pixelated; }
+
+.status { font-size: 12px; color: #c8b88a; margin-bottom: 8px; }
+.status.error { color: #ff5050; }
+.status.ok { color: #5aff5a; }
+
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-top: 1px solid rgba(139,105,20,0.15);
+  font-size: 11px;
+}
+.info-label { color: #7a7055; }
+.info-value { color: #dfbd5e; font-family: monospace; user-select: all; }
+
+.close-btn {
+  margin-top: 14px; padding: 10px 28px;
+  background: rgba(139,105,20,0.15); border: 1px solid #8b6914;
+  border-radius: 8px; color: #dfbd5e; font-size: 13px;
+  cursor: pointer; transition: all 0.2s;
+}
+.close-btn:hover { background: rgba(139,105,20,0.3); }
+
+.loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #8b6914; border-top-color: #dfbd5e; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>PeonClaude</h1>
+  <div class="sub">Scanne ce QR avec l'app mobile</div>
+
+  <div class="qr-wrap" id="qr-wrap">
+    <div id="qr-loading" style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;color:#7a7055;">
+      <span class="loading"></span> Connexion au tunnel...
+    </div>
+    <img id="qr-img" style="display:none;" alt="QR Code">
+  </div>
+
+  <div class="status" id="status">Preparation...</div>
+
+  <div id="info" style="display:none;">
+    <div class="info-row">
+      <span class="info-label">LAN</span>
+      <span class="info-value" id="lan-ip"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Internet</span>
+      <span class="info-value" id="tunnel-url"></span>
+    </div>
+  </div>
+
+  <button class="close-btn" onclick="window.api.close()">Fermer</button>
+</div>
+
+<script>
+window.api.onPairingData((data) => {
+  if (data.qrDataUrl) {
+    document.getElementById('qr-loading').style.display = 'none';
+    const img = document.getElementById('qr-img');
+    img.src = data.qrDataUrl;
+    img.style.display = 'block';
+  }
+  if (data.status) {
+    const el = document.getElementById('status');
+    el.textContent = data.status;
+    el.className = 'status' + (data.statusType ? ' ' + data.statusType : '');
+  }
+  if (data.lanIp) {
+    document.getElementById('lan-ip').textContent = data.lanIp + ':7777';
+    document.getElementById('info').style.display = 'block';
+  }
+  if (data.tunnelUrl) {
+    document.getElementById('tunnel-url').textContent = data.tunnelUrl;
+  }
+  if (data.connected) {
+    const el = document.getElementById('status');
+    el.textContent = 'Mobile connecte !';
+    el.className = 'status ok';
+  }
+});
+</script>
+</body>
+</html>

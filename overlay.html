@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
 html, body { background: transparent; overflow: hidden; width: 100%; height: 100%; }
-body { display: flex; align-items: flex-start; justify-content: flex-end; padding: 8px; cursor: pointer; }
+body { display: flex; align-items: flex-start; justify-content: flex-end; padding: 8px; cursor: pointer; -webkit-app-region: drag; }
 
 /* ─── Warcraft III style notification ─── */
 .wc3-notif {
@@ -141,7 +141,7 @@ body { display: flex; align-items: flex-start; justify-content: flex-end; paddin
 .reward-xp { color: #88bbff; text-shadow: 0 0 4px rgba(136,187,255,0.3); }
 </style>
 </head>
-<body onclick="window.api?.focusNeonHub()">
+<body onclick="window.api?.focusTerminal()">
 <div class="wc3-notif">
   <div class="portrait-frame">
     <div class="portrait-glow"></div>
@@ -161,11 +161,14 @@ body { display: flex; align-items: flex-start; justify-content: flex-end; paddin
 const params = new URLSearchParams(window.location.search);
 const project = decodeURIComponent(params.get('project') || 'Projet');
 const faction = decodeURIComponent(params.get('faction') || 'human');
+const charIcon = params.get('charIcon') ? decodeURIComponent(params.get('charIcon')) : '';
 
-// Portrait image
+// Portrait image — use character icon if available, fallback to GIF
 const portrait = document.getElementById('portrait');
-if (faction === 'orc') {
-  // Use peon portrait if exists, fallback to peasant
+if (charIcon) {
+  portrait.src = charIcon;
+  portrait.onerror = () => { portrait.src = faction === 'orc' ? 'assets/peon.gif' : 'assets/peasant.gif'; };
+} else if (faction === 'orc') {
   portrait.src = 'assets/peon.gif';
   portrait.onerror = () => { portrait.src = 'assets/peasant.gif'; };
 } else {

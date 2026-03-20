@@ -1,1 +1,10 @@
-node_modules/\ndist/\n*.log\ncaptures/
+node_modules/
+dist/
+extracted-sounds/
+extracted-characters/
+wc3-units.json
+wc3-icons.json
+*.db
+captures/
+package-lock.json
+.claude/

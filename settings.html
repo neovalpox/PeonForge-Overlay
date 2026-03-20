@@ -115,24 +115,36 @@ input[type="range"]::-webkit-slider-thumb {
   <div class="header">
     <canvas id="header-sprite" width="48" height="68"></canvas>
     <div class="header-text">
-      <h1>PeonPing Overlay</h1>
+      <h1>PeonForge</h1>
       <p id="header-sub">Humain (Paysan) — Actif</p>
     </div>
     <button class="close-btn" onclick="window.api.close()">&times;</button>
   </div>
 
   <div class="body">
-    <!-- Faction -->
+    <!-- Username -->
     <div class="section">
-      <div class="section-title">Faction</div>
-      <div class="faction-row">
-        <button class="faction-btn human" id="btn-human" onclick="selectFaction('human')">
-          <span class="faction-icon">&#x26CF;&#xFE0F;</span>Humain
-        </button>
-        <button class="faction-btn orc" id="btn-orc" onclick="selectFaction('orc')">
-          <span class="faction-icon">&#x1FA93;</span>Orc
-        </button>
+      <div class="section-title">Pseudo (peonforge.ch)</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="text" id="username-input" maxlength="20" placeholder="Ton pseudo..."
+          style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#e0e0f0;font-size:13px;outline:none;">
+        <button onclick="saveUsername()" style="padding:8px 14px;background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.25);border-radius:8px;color:#00f0ff;font-size:12px;font-weight:600;cursor:pointer;">OK</button>
       </div>
+    </div>
+
+    <!-- Side -->
+    <div class="section">
+      <div class="section-title">Camp</div>
+      <div class="faction-row">
+        <button class="faction-btn human" id="btn-alliance" onclick="selectSide('alliance')">Alliance</button>
+        <button class="faction-btn orc" id="btn-horde" onclick="selectSide('horde')">Horde</button>
+      </div>
+    </div>
+
+    <!-- Characters -->
+    <div class="section">
+      <div class="section-title">Personnages debloques</div>
+      <div id="characters-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
     </div>
 
     <!-- Toggles -->
@@ -143,8 +155,16 @@ input[type="range"]::-webkit-slider-thumb {
         <button class="toggle" id="toggle-sound" onclick="toggleSound()"></button>
       </div>
       <div class="toggle-row">
-        <div><div class="toggle-label">Ecoute active</div><div class="toggle-sub">Recevoir les notifications</div></div>
+        <div><div class="toggle-label">Ecoute active</div><div class="toggle-sub">Recevoir les evenements</div></div>
         <button class="toggle" id="toggle-watching" onclick="toggleWatching()"></button>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Peon sur l'ecran</div><div class="toggle-sub">Afficher le compagnon</div></div>
+        <button class="toggle" id="toggle-companion" onclick="toggleCompanion()"></button>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Notifications visuelles</div><div class="toggle-sub">Afficher en haut a droite</div></div>
+        <button class="toggle" id="toggle-notifs" onclick="toggleNotifs()"></button>
       </div>
     </div>
 
@@ -181,18 +201,23 @@ let config = {
 };
 
 function updateUI() {
-  document.getElementById('btn-human').classList.toggle('active', config.faction === 'human');
-  document.getElementById('btn-orc').classList.toggle('active', config.faction === 'orc');
+  const s = config.side || (config.faction === 'orc' ? 'horde' : 'alliance');
+  document.getElementById('btn-alliance').classList.toggle('active', s === 'alliance');
+  document.getElementById('btn-horde').classList.toggle('active', s === 'horde');
   document.getElementById('toggle-sound').classList.toggle('on', config.soundEnabled);
   document.getElementById('toggle-watching').classList.toggle('on', config.watching);
+  document.getElementById('toggle-companion').classList.toggle('on', config.showCompanion !== false);
+  document.getElementById('toggle-notifs').classList.toggle('on', config.showNotifications !== false);
   document.getElementById('volume-slider').value = config.volume * 100;
   document.getElementById('volume-val').textContent = Math.round(config.volume * 100) + '%';
   document.getElementById('header-sub').textContent =
-    `${config.faction === 'human' ? 'Humain (Paysan)' : 'Orc (Peon)'} — ${config.watching ? 'Actif' : 'En pause'}`;
+    `${s === 'alliance' ? 'Alliance' : 'Horde'} — ${config.watching ? 'Actif' : 'En pause'}`;
   renderSprite();
 }
 
-function selectFaction(f) { config.faction = f; window.api.setFaction(f); updateUI(); }
+function selectSide(s) { config.side = s; config.faction = s === 'horde' ? 'orc' : 'human'; window.api.setFaction(config.faction); updateUI(); }
+function toggleCompanion() { config.showCompanion = !config.showCompanion; window.api.setShowCompanion(config.showCompanion); updateUI(); }
+function toggleNotifs() { config.showNotifications = !config.showNotifications; window.api.setShowNotifications(config.showNotifications); updateUI(); }
 function toggleSound() { config.soundEnabled = !config.soundEnabled; window.api.setSound(config.soundEnabled); updateUI(); }
 function toggleWatching() { config.watching = !config.watching; window.api.setWatching(config.watching); updateUI(); }
 function setVolume(v) { config.volume = v / 100; window.api.setVolume(config.volume); document.getElementById('volume-val').textContent = v + '%'; }
@@ -245,7 +270,39 @@ window.api.onConfigUpdate((data) => {
   updateUI();
 });
 
+// Username
+function loadUsername() {
+  const name = window.api.getUsername();
+  document.getElementById('username-input').value = name || '';
+}
+function saveUsername() {
+  const name = document.getElementById('username-input').value.trim();
+  if (name.length >= 2) window.api.setUsername(name);
+}
+
+// Characters grid
+const FC = {human:'#64c8ff',orc:'#ff6644',nightelf:'#b482ff',undead:'#5aff5a',naga:'#00ccaa',neutral:'#ffc832'};
+function loadCharacters() {
+  const chars = window.api.getCharacters();
+  const grid = document.getElementById('characters-grid');
+  if (!chars || !chars.length) { grid.innerHTML = '<div class="empty">Aucun personnage</div>'; return; }
+  grid.innerHTML = chars.map(c => {
+    const col = FC[c.faction] || '#c8b88a';
+    const opacity = c.unlocked ? '1' : '0.3';
+    const lock = c.unlocked ? '' : '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);border-radius:6px;font-size:9px;color:#dfbd5e;font-weight:700;">Niv.' + c.unlockLevel + '</div>';
+    return '<div style="text-align:center;opacity:' + opacity + ';position:relative;" title="' + c.name + ' (Niv.' + c.unlockLevel + ')">' +
+      '<div style="width:48px;height:48px;margin:0 auto;border-radius:6px;border:1.5px solid ' + col + ';overflow:hidden;position:relative;">' +
+        '<img src="https://peonforge.ch/assets/icons/' + c.id + '.png" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">' +
+        lock +
+      '</div>' +
+      '<div style="font-size:9px;color:' + col + ';margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:64px;">' + c.name + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 updateUI();
+loadUsername();
+loadCharacters();
 loadHistory();
 </script>
 </body>

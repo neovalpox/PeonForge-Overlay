@@ -1,0 +1,360 @@
+[
+  {
+    "race": "Human",
+    "unit": "Peasant",
+    "name": "Paysan",
+    "unlockLevel": 1,
+    "faction": "human",
+    "sounds": 0,
+    "status": "already_exists"
+  },
+  {
+    "race": "Orc",
+    "unit": "Peon",
+    "name": "Peon",
+    "unlockLevel": 1,
+    "faction": "orc",
+    "sounds": 0,
+    "status": "already_exists"
+  },
+  {
+    "race": "Human",
+    "unit": "Footman",
+    "name": "Fantassin",
+    "unlockLevel": 3,
+    "faction": "human",
+    "sounds": 17,
+    "status": "ok",
+    "packName": "footman_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "Grunt",
+    "name": "Grunt",
+    "unlockLevel": 3,
+    "faction": "orc",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "grunt_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "Archer",
+    "name": "Archère",
+    "unlockLevel": 5,
+    "faction": "nightelf",
+    "sounds": 22,
+    "status": "ok",
+    "packName": "archer_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "Ghoul",
+    "name": "Goule",
+    "unlockLevel": 5,
+    "faction": "undead",
+    "sounds": 18,
+    "status": "ok",
+    "packName": "ghoul_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Sorceress",
+    "name": "Ensorceleuse",
+    "unlockLevel": 8,
+    "faction": "human",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "sorceress_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "WitchDoctor",
+    "name": "Medecin",
+    "unlockLevel": 8,
+    "faction": "orc",
+    "sounds": 19,
+    "status": "ok",
+    "packName": "witchdoctor_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "Dryad",
+    "name": "Dryade",
+    "unlockLevel": 10,
+    "faction": "nightelf",
+    "sounds": 22,
+    "status": "ok",
+    "packName": "dryad_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "Banshee",
+    "name": "Banshee",
+    "unlockLevel": 10,
+    "faction": "undead",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "banshee_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Knight",
+    "name": "Chevalier",
+    "unlockLevel": 12,
+    "faction": "human",
+    "sounds": 19,
+    "status": "ok",
+    "packName": "knight_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "Tauren",
+    "name": "Tauren",
+    "unlockLevel": 12,
+    "faction": "orc",
+    "sounds": 58,
+    "status": "ok",
+    "packName": "tauren_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Priest",
+    "name": "Pretre",
+    "unlockLevel": 14,
+    "faction": "human",
+    "sounds": 19,
+    "status": "ok",
+    "packName": "priest_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "Shaman",
+    "name": "Shaman",
+    "unlockLevel": 14,
+    "faction": "orc",
+    "sounds": 21,
+    "status": "ok",
+    "packName": "shaman_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "DruidOfTheClaw",
+    "name": "Druide de la Griffe",
+    "unlockLevel": 15,
+    "faction": "nightelf",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "druidoftheclaw_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "HeroPaladin",
+    "name": "Paladin",
+    "unlockLevel": 18,
+    "faction": "human",
+    "sounds": 19,
+    "status": "ok",
+    "packName": "heropaladin_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "HeroFarseer",
+    "name": "Farseer",
+    "unlockLevel": 18,
+    "faction": "orc",
+    "sounds": 18,
+    "status": "ok",
+    "packName": "herofarseer_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "HeroKeeperOfTheGrove",
+    "name": "Gardien du Bosquet",
+    "unlockLevel": 20,
+    "faction": "nightelf",
+    "sounds": 21,
+    "status": "ok",
+    "packName": "herokeeperofthegrove_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "HeroDeathKnight",
+    "name": "Chevalier de la Mort",
+    "unlockLevel": 20,
+    "faction": "undead",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "herodeathknight_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "HeroMountainKing",
+    "name": "Roi de la Montagne",
+    "unlockLevel": 20,
+    "faction": "human",
+    "sounds": 21,
+    "status": "ok",
+    "packName": "heromountainking_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Arthas",
+    "name": "Arthas",
+    "unlockLevel": 25,
+    "faction": "human",
+    "sounds": 24,
+    "status": "ok",
+    "packName": "arthas_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "Thrall",
+    "name": "Thrall",
+    "unlockLevel": 25,
+    "faction": "orc",
+    "sounds": 34,
+    "status": "ok",
+    "packName": "thrall_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Jaina",
+    "name": "Jaina",
+    "unlockLevel": 25,
+    "faction": "human",
+    "sounds": 33,
+    "status": "ok",
+    "packName": "jaina_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "Tyrande",
+    "name": "Tyrande",
+    "unlockLevel": 25,
+    "faction": "nightelf",
+    "sounds": 19,
+    "status": "ok",
+    "packName": "tyrande_fr"
+  },
+  {
+    "race": "Human",
+    "unit": "Uther",
+    "name": "Uther",
+    "unlockLevel": 25,
+    "faction": "human",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "uther_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "HeroLich",
+    "name": "Liche",
+    "unlockLevel": 30,
+    "faction": "undead",
+    "sounds": 22,
+    "status": "ok",
+    "packName": "herolich_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "HeroDreadLord",
+    "name": "Seigneur de l'Effroi",
+    "unlockLevel": 30,
+    "faction": "undead",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "herodreadlord_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "HeroShadowHunter",
+    "name": "Chasseur des Ombres",
+    "unlockLevel": 30,
+    "faction": "orc",
+    "sounds": 27,
+    "status": "ok",
+    "packName": "heroshadowhunter_fr"
+  },
+  {
+    "race": "Naga",
+    "unit": "LadyVashj",
+    "name": "Lady Vashj",
+    "unlockLevel": 30,
+    "faction": "naga",
+    "sounds": 21,
+    "status": "ok",
+    "packName": "ladyvashj_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "EvilArthas",
+    "name": "Arthas Corrompu",
+    "unlockLevel": 35,
+    "faction": "undead",
+    "sounds": 21,
+    "status": "ok",
+    "packName": "evilarthas_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "Maiev",
+    "name": "Maiev",
+    "unlockLevel": 35,
+    "faction": "nightelf",
+    "sounds": 20,
+    "status": "ok",
+    "packName": "maiev_fr"
+  },
+  {
+    "race": "Orc",
+    "unit": "Cairne",
+    "name": "Cairne",
+    "unlockLevel": 35,
+    "faction": "orc",
+    "sounds": 18,
+    "status": "ok",
+    "packName": "cairne_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "Illidan",
+    "name": "Illidan",
+    "unlockLevel": 40,
+    "faction": "nightelf",
+    "sounds": 41,
+    "status": "ok",
+    "packName": "illidan_fr"
+  },
+  {
+    "race": "NightElf",
+    "unit": "HeroDemonHunter",
+    "name": "Chasseur de Demons",
+    "unlockLevel": 40,
+    "faction": "nightelf",
+    "sounds": 46,
+    "status": "ok",
+    "packName": "herodemonhunter_fr"
+  },
+  {
+    "race": "Creeps",
+    "unit": "PandarenBrewmaster",
+    "name": "Pandaren",
+    "unlockLevel": 45,
+    "faction": "neutral",
+    "sounds": 42,
+    "status": "ok",
+    "packName": "pandarenbrewmaster_fr"
+  },
+  {
+    "race": "Undead",
+    "unit": "KelThuzadLich",
+    "name": "Kel'Thuzad",
+    "unlockLevel": 50,
+    "faction": "undead",
+    "sounds": 17,
+    "status": "ok",
+    "packName": "kelthuzadlich_fr"
+  }
+]
