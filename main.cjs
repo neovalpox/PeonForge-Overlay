@@ -46,6 +46,8 @@ let tamagotchi = {
   lastFed: 0,        // timestamp
   lastPet: 0,        // timestamp
   xpBoostUntil: 0,   // timestamp (boost active until)
+  dailySteps: 0,     // steps today from mobile pedometer
+  stepsDate: '',     // YYYY-MM-DD to reset daily
 };
 
 const CONFIG_DIR = path.join(os.homedir(), '.peonping-overlay');
@@ -259,19 +261,18 @@ function getMood() {
 }
 
 function getHappiness() {
-  // Happiness decays: -1 per 10 min since last PET or FEED
-  const now = Date.now();
-  const lastCare = Math.max(tamagotchi.lastFed || 0, tamagotchi.lastPet || 0);
-  if (lastCare === 0) return 50; // never interacted: neutral
-  const minutesSince = (now - lastCare) / 60000;
-  const decay = Math.floor(minutesSince / 10);
-  return Math.max(0, Math.min(100, tamagotchi.happiness - decay));
+  // Happiness = daily steps / 100, capped at 100 (10,000 steps = 100%)
+  const today = new Date().toISOString().slice(0, 10);
+  if (tamagotchi.stepsDate !== today) {
+    tamagotchi.dailySteps = 0;
+    tamagotchi.stepsDate = today;
+  }
+  return Math.max(0, Math.min(100, Math.floor(tamagotchi.dailySteps / 100)));
 }
 
 function applyHappinessDecay() {
-  // Persist the decayed value so interactions work correctly
-  const current = getHappiness();
-  tamagotchi.happiness = current;
+  // No more decay — happiness is purely step-based now
+  tamagotchi.happiness = getHappiness();
 }
 
 function getTamagotchiPayload() {
@@ -287,6 +288,7 @@ function getTamagotchiPayload() {
     tasksCompleted: tamagotchi.tasksCompleted,
     totalWorkTime: tamagotchi.totalWorkTime,
     happiness: getHappiness(),
+    dailySteps: tamagotchi.dailySteps,
     lastFed: tamagotchi.lastFed,
     lastPet: tamagotchi.lastPet,
     xpBoost: tamagotchi.xpBoostUntil > Date.now(),
@@ -1293,6 +1295,20 @@ function startServer() {
             }
             console.log('[PeonForge] Terminal stream stopped + window restored');
           }
+        }
+        if (msg.type === 'set-steps') {
+          const steps = parseInt(msg.steps) || 0;
+          const today = new Date().toISOString().slice(0, 10);
+          if (tamagotchi.stepsDate !== today) {
+            tamagotchi.dailySteps = 0;
+            tamagotchi.stepsDate = today;
+          }
+          tamagotchi.dailySteps = steps;
+          tamagotchi.happiness = getHappiness();
+          saveTamagotchi();
+          const update = { tamagotchi: getTamagotchiPayload(), mood: getMood() };
+          broadcastToMobile(update);
+          pushCompanionUpdate(update);
         }
         if (msg.type === 'interact') {
           let result;
