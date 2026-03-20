@@ -1,0 +1,63 @@
+{
+  "cesp_version": "1.0",
+  "name": "peon_fr",
+  "display_name": "Peon (Francais WC3)",
+  "version": "2.0.0",
+  "language": "fr",
+  "categories": {
+    "session.start": {
+      "sounds": [
+        { "file": "sounds/PeonReady1.wav", "label": "Pret au travail" },
+        { "file": "sounds/PeonWarcry1.wav", "label": "Lok'tar" },
+        { "file": "sounds/PeonWhat1.wav", "label": "Quoi ?" },
+        { "file": "sounds/PeonWhat2.wav", "label": "Hein ?" }
+      ]
+    },
+    "task.acknowledge": {
+      "sounds": [
+        { "file": "sounds/PeonYes1.wav", "label": "Dabu" },
+        { "file": "sounds/PeonYes2.wav", "label": "Zug zug" },
+        { "file": "sounds/PeonYes3.wav", "label": "Compris" },
+        { "file": "sounds/PeonYes4.wav", "label": "J'y vais" },
+        { "file": "sounds/PeonYesAttack1.wav", "label": "OK" },
+        { "file": "sounds/PeonYesAttack2.wav", "label": "Moe peut" }
+      ]
+    },
+    "task.complete": {
+      "sounds": [
+        { "file": "sounds/PeonJobDone.wav", "label": "Travail termine" },
+        { "file": "sounds/PeonReady1.wav", "label": "Pret au travail" },
+        { "file": "sounds/PeonYes1.wav", "label": "Dabu" },
+        { "file": "sounds/PeonYes3.wav", "label": "Compris" },
+        { "file": "sounds/PeonWarcry1.wav", "label": "Lok'tar" }
+      ]
+    },
+    "task.error": {
+      "sounds": [
+        { "file": "sounds/PeonYesAttack3.wav", "label": "Moe tout seul" },
+        { "file": "sounds/PeonDeath.wav", "label": "Urgh" }
+      ]
+    },
+    "input.required": {
+      "sounds": [
+        { "file": "sounds/PeonWhat1.wav", "label": "Quoi ?" },
+        { "file": "sounds/PeonWhat2.wav", "label": "Hein ?" },
+        { "file": "sounds/PeonWhat3.wav", "label": "Quoi encore ?" },
+        { "file": "sounds/PeonWhat4.wav", "label": "Y a quoi ?" }
+      ]
+    },
+    "resource.limit": {
+      "sounds": [
+        { "file": "sounds/PeonWarcry1.wav", "label": "Lok'tar" }
+      ]
+    },
+    "user.spam": {
+      "sounds": [
+        { "file": "sounds/PeonPissed1.wav", "label": "Pissed 1" },
+        { "file": "sounds/PeonPissed2.wav", "label": "Pissed 2" },
+        { "file": "sounds/PeonPissed3.wav", "label": "Pissed 3" },
+        { "file": "sounds/PeonPissed4.wav", "label": "Pissed 4" }
+      ]
+    }
+  }
+}

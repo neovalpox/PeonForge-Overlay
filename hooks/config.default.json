@@ -1,0 +1,22 @@
+﻿{
+    "active_pack": "dryad_fr",
+    "pack_rotation":  [
+
+                      ],
+    "enabled":  true,
+    "pack_rotation_mode":  "random",
+    "silent_window_seconds":  0,
+    "annoyed_threshold":  3,
+    "desktop_notifications":  true,
+    "categories":  {
+                       "task.acknowledge":  true,
+                       "session.start":  true,
+                       "input.required":  true,
+                       "task.error":  true,
+                       "resource.limit":  true,
+                       "task.complete":  true,
+                       "user.spam":  true
+                   },
+    "annoyed_window_seconds":  10,
+    "volume": 0.42
+}

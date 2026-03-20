@@ -9,8 +9,9 @@ A Windows desktop notification overlay built with Electron. It displays animated
 ## Setup
 
 ```
-npm install        # Install Node dependencies
-npm run setup      # Install all prerequisites (cloudflared, ffplay)
+npm install            # Install Node dependencies
+npm run setup          # Install all prerequisites (cloudflared, ffplay)
+npm run install-hooks  # Install Claude Code hooks + sound packs
 ```
 
 ### Prerequisites
@@ -25,6 +26,7 @@ The `npm run setup` script checks and installs these automatically via winget.
 
 - `npm start` — Run the app in dev mode (launches Electron)
 - `npm run setup` — Install prerequisites (cloudflared, ffplay)
+- `npm run install-hooks` — Install Claude Code hooks and sound packs to `~/.claude/hooks/peon-ping/`
 - `npm run dist` — Build a Windows NSIS installer to `dist/`
 
 No test framework or linter is configured.

@@ -1,0 +1,66 @@
+{
+  "cesp_version": "1.0",
+  "name": "peasant_fr",
+  "display_name": "Paysan (Francais WC3)",
+  "version": "2.0.0",
+  "language": "fr",
+  "categories": {
+    "session.start": {
+      "sounds": [
+        { "file": "sounds/PeasantReady1.wav", "label": "Pret au travail" },
+        { "file": "sounds/PeasantWhat1.wav", "label": "Oui milord ?" },
+        { "file": "sounds/PeasantWhat2.wav", "label": "Qu'y a-t-il ?" },
+        { "file": "sounds/PeasantWhat3.wav", "label": "Du travail ?" },
+        { "file": "sounds/PeasantWarcry1.wav", "label": "Cri de guerre" }
+      ]
+    },
+    "task.acknowledge": {
+      "sounds": [
+        { "file": "sounds/PeasantYes1.wav", "label": "Entendu" },
+        { "file": "sounds/PeasantYes2.wav", "label": "Oui milord" },
+        { "file": "sounds/PeasantYes3.wav", "label": "D'accord" },
+        { "file": "sounds/PeasantYes4.wav", "label": "J'y vais" },
+        { "file": "sounds/PeasantYesAttack1.wav", "label": "Je suppose..." },
+        { "file": "sounds/PeasantYesAttack2.wav", "label": "Si vous voulez..." }
+      ]
+    },
+    "task.complete": {
+      "sounds": [
+        { "file": "sounds/PeasantBuildingComplete1.wav", "label": "Construction terminee" },
+        { "file": "sounds/PeasantReady1.wav", "label": "Pret au travail" },
+        { "file": "sounds/PeasantYes1.wav", "label": "Entendu" },
+        { "file": "sounds/PeasantYes3.wav", "label": "D'accord" },
+        { "file": "sounds/PeasantWhat3.wav", "label": "Du travail ?" }
+      ]
+    },
+    "task.error": {
+      "sounds": [
+        { "file": "sounds/PeasantYesAttack3.wav", "label": "Personne d'autre..." },
+        { "file": "sounds/PeasantYesAttack4.wav", "label": "C'est fini pour moi" },
+        { "file": "sounds/PeasantDeath.wav", "label": "Argh" }
+      ]
+    },
+    "input.required": {
+      "sounds": [
+        { "file": "sounds/PeasantWhat1.wav", "label": "Oui milord ?" },
+        { "file": "sounds/PeasantWhat2.wav", "label": "Qu'y a-t-il ?" },
+        { "file": "sounds/PeasantWhat3.wav", "label": "Du travail ?" },
+        { "file": "sounds/PeasantWhat4.wav", "label": "Quoi ?" }
+      ]
+    },
+    "resource.limit": {
+      "sounds": [
+        { "file": "sounds/PeasantYesAttack4.wav", "label": "C'est fini pour moi" }
+      ]
+    },
+    "user.spam": {
+      "sounds": [
+        { "file": "sounds/PeasantPissed1.wav", "label": "Pissed 1" },
+        { "file": "sounds/PeasantPissed2.wav", "label": "Pissed 2" },
+        { "file": "sounds/PeasantPissed3.wav", "label": "Pissed 3" },
+        { "file": "sounds/PeasantPissed4.wav", "label": "Pissed 4" },
+        { "file": "sounds/PeasantPissed5.wav", "label": "Pissed 5" }
+      ]
+    }
+  }
+}
