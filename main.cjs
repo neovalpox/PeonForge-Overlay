@@ -593,7 +593,7 @@ function showCompanion() {
 
   const display = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;
-  const w = 280, h = 310;
+  const w = 280, h = 340;
 
   companionWindow = new BrowserWindow({
     width: w, height: h,
