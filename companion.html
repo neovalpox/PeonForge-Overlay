@@ -354,9 +354,9 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
       <div id="usage-section" style="display:none">
         <div style="display:flex;align-items:center;gap:4px;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff;margin-bottom:3px">
           <span style="font-size:10px">&#x26A1;</span>
-          <span id="usage-today-cost">$0</span>
+          <span id="usage-today-tokens"></span>
           <span style="color:#5a5040;font-weight:400">aujourd'hui</span>
-          <span style="color:#5a5040;margin-left:auto;font-weight:400" id="usage-tokens"></span>
+          <span style="color:#5a5040;margin-left:auto;font-weight:400" id="usage-month-tokens"></span>
         </div>
         <div style="display:flex;gap:4px;align-items:center">
           <div style="flex:1" title="Jour">
@@ -370,9 +370,9 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
           </div>
         </div>
         <div style="display:flex;gap:4px;font:400 7px 'Segoe UI',sans-serif;color:#5a5040;margin-top:1px">
-          <span style="flex:1;color:#64c8ff" id="usage-lbl-day">J: $0</span>
-          <span style="flex:1;color:#b482ff" id="usage-lbl-week">S: $0</span>
-          <span style="flex:1;color:#dfbd5e" id="usage-lbl-month">M: $0</span>
+          <span style="flex:1;color:#64c8ff" id="usage-lbl-day">J: 0M</span>
+          <span style="flex:1;color:#b482ff" id="usage-lbl-week">S: 0M</span>
+          <span style="flex:1;color:#dfbd5e" id="usage-lbl-month">M: 0M</span>
         </div>
       </div>
       <div class="stats-row">
@@ -525,31 +525,30 @@ function updateTamagotchi(tama) {
   const mins = Math.floor(((tama.totalWorkTime || 0) % 3600) / 60);
   document.getElementById('time-stat').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
 
-  // Usage stats
+  // Usage stats (tokens, not $)
   const usage = tama.usage;
-  if (usage && (usage.todayCost > 0 || usage.weekCost > 0)) {
+  if (usage && (usage.todayTokens > 0 || usage.weekTokens > 0)) {
     document.getElementById('usage-section').style.display = 'block';
-    document.getElementById('usage-today-cost').textContent = `$${usage.todayCost.toFixed(2)}`;
-    const mt = usage.todayTokens >= 1e6 ? `${(usage.todayTokens/1e6).toFixed(1)}M` : `${Math.round(usage.todayTokens/1e3)}K`;
-    document.getElementById('usage-tokens').textContent = mt + ' tokens';
+    const fmtTok = (t) => t >= 1e9 ? (t/1e9).toFixed(1)+'G' : t >= 1e6 ? (t/1e6).toFixed(1)+'M' : t >= 1e3 ? Math.round(t/1e3)+'K' : ''+t;
+    document.getElementById('usage-today-tokens').textContent = fmtTok(usage.todayTokens) + ' tokens';
+    document.getElementById('usage-month-tokens').textContent = fmtTok(usage.monthTokens) + ' ce mois';
 
-    // Progress bars (max budgets: day=$50, week=$200, month=$500)
-    const dayPct = Math.min(100, (usage.todayCost / 50) * 100);
-    const weekPct = Math.min(100, (usage.weekCost / 200) * 100);
-    const monthPct = Math.min(100, (usage.monthCost / 500) * 100);
+    // Progress bars based on token volume (day: 500M, week: 2G, month: 5G)
+    const dayPct = Math.min(100, (usage.todayTokens / 500e6) * 100);
+    const weekPct = Math.min(100, (usage.weekTokens / 2e9) * 100);
+    const monthPct = Math.min(100, (usage.monthTokens / 5e9) * 100);
     document.getElementById('usage-bar-day').style.width = dayPct + '%';
     document.getElementById('usage-bar-week').style.width = weekPct + '%';
     document.getElementById('usage-bar-month').style.width = monthPct + '%';
 
-    // Color coding: green < 50%, yellow < 80%, red >= 80%
-    const barColor = (pct) => pct >= 80 ? '#ff5050' : pct >= 50 ? '#dfbd5e' : null;
-    const dc = barColor(dayPct); if (dc) document.getElementById('usage-bar-day').style.background = dc;
-    const wc = barColor(weekPct); if (wc) document.getElementById('usage-bar-week').style.background = wc;
-    const mc = barColor(monthPct); if (mc) document.getElementById('usage-bar-month').style.background = mc;
+    const barColor = (pct, base) => pct >= 80 ? '#ff5050' : pct >= 50 ? '#dfbd5e' : base;
+    document.getElementById('usage-bar-day').style.background = barColor(dayPct, '#64c8ff');
+    document.getElementById('usage-bar-week').style.background = barColor(weekPct, '#b482ff');
+    document.getElementById('usage-bar-month').style.background = barColor(monthPct, '#dfbd5e');
 
-    document.getElementById('usage-lbl-day').textContent = `J: $${usage.todayCost.toFixed(0)}`;
-    document.getElementById('usage-lbl-week').textContent = `S: $${usage.weekCost.toFixed(0)}`;
-    document.getElementById('usage-lbl-month').textContent = `M: $${usage.monthCost.toFixed(0)}`;
+    document.getElementById('usage-lbl-day').textContent = 'J: ' + fmtTok(usage.todayTokens);
+    document.getElementById('usage-lbl-week').textContent = 'S: ' + fmtTok(usage.weekTokens);
+    document.getElementById('usage-lbl-month').textContent = 'M: ' + fmtTok(usage.monthTokens);
   }
 
   // Level up effect
