@@ -172,6 +172,7 @@ function loadConfig() {
       volume = c.volume ?? 0.7;
       showCompanionWidget = c.showCompanion !== false;
       showNotifications = c.showNotifications !== false;
+      companionMini = c.companionMini === true;
       soundEnabled = c.soundEnabled !== false;
       watching = c.watching !== false;
     }
@@ -180,7 +181,7 @@ function loadConfig() {
 
 function saveConfig() {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ faction, side, volume, soundEnabled, watching, showCompanion: showCompanionWidget, showNotifications }, null, 2));
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ faction, side, volume, soundEnabled, watching, showCompanion: showCompanionWidget, showNotifications, companionMini }, null, 2));
   } catch {}
 }
 
@@ -794,6 +795,7 @@ function showCompanion() {
 
 function toggleCompanionMini() {
   companionMini = !companionMini;
+  saveConfig();
   if (companionWindow && !companionWindow.isDestroyed()) {
     companionWindow.close();
     companionWindow = null;
