@@ -878,8 +878,7 @@ function showOverlay(project, fac, charIconId) {
     }
   });
 
-  const iconUrl = charIconId ? `http://127.0.0.1:7777/icon/${charIconId}.png` : '';
-  overlayWindow.loadFile('overlay.html', { query: { project, faction: fac, charIcon: iconUrl } });
+  overlayWindow.loadFile('overlay.html', { query: { project, faction: fac, charIcon: charIconId || '' } });
   overlayWindow.on('closed', () => { overlayWindow = null; });
 
   setTimeout(() => {

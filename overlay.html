@@ -163,16 +163,13 @@ const project = params.get('project') || 'Projet';
 const faction = params.get('faction') || 'human';
 const charIcon = params.get('charIcon') || '';
 
-// Portrait image — use character icon if available, fallback to GIF
+// Portrait image — charIcon is the character pack ID (e.g. knight_fr)
 const portrait = document.getElementById('portrait');
 if (charIcon) {
-  portrait.src = charIcon;
+  portrait.src = `assets/icons/${charIcon}.png`;
   portrait.onerror = () => { portrait.src = faction === 'orc' ? 'assets/peon.gif' : 'assets/peasant.gif'; };
-} else if (faction === 'orc') {
-  portrait.src = 'assets/peon.gif';
-  portrait.onerror = () => { portrait.src = 'assets/peasant.gif'; };
 } else {
-  portrait.src = 'assets/peasant.gif';
+  portrait.src = faction === 'orc' ? 'assets/peon.gif' : 'assets/peasant.gif';
 }
 
 // Title
