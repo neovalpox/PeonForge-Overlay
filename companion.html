@@ -440,7 +440,7 @@ const EVENT_META = {
 
 // ─── Init ───
 const fdata = FACTION[faction] || FACTION.human;
-// Portrait will be updated by first IPC update with avatar
+let currentAvatar = null; // set by IPC update, prevents faction from resetting portrait
 document.getElementById('portrait').src = fdata.gif;
 document.getElementById('char-name').textContent = fdata.name;
 
@@ -568,9 +568,10 @@ function renderSessions(sessionsList) {
     const elapsed = Math.floor((Date.now() - s.startTime) / 1000);
     const m = Math.floor(elapsed / 60);
     const ss = String(elapsed % 60).padStart(2, '0');
-    // Consider session idle if no event for >2 min
+    // Scanned sessions (eventCount=0) are always working (we can't track events for them)
+    // Hook sessions are idle if no event for >2 min
     const lastEvent = s.lastEventTime || s.startTime;
-    const isIdle = (Date.now() - lastEvent) > 120000;
+    const isIdle = s.eventCount > 0 && (Date.now() - lastEvent) > 120000;
     const state = isIdle ? 'idle' : 'working';
     const iconSrc = c.id ? `assets/icons/${c.id}.png` : c.gif;
     return `<div class="session-chip ${state}" title="${s.project}">` +
@@ -648,6 +649,7 @@ setInterval(() => {
 window.api?.onUpdate((data) => {
   // Avatar change
   if (data.avatar) {
+    currentAvatar = data.avatar;
     const portrait = document.getElementById('portrait');
     portrait.src = `assets/icons/${data.avatar}.png`;
     portrait.onerror = () => { portrait.src = (FACTION[faction] || FACTION.human).gif; };
@@ -660,7 +662,7 @@ window.api?.onUpdate((data) => {
   if (data.faction && data.faction !== faction) {
     faction = data.faction;
     const fd = FACTION[faction] || FACTION.human;
-    if (!data.avatar) {
+    if (!currentAvatar) {
       document.getElementById('portrait').src = fd.gif;
       document.getElementById('char-name').textContent = fd.name;
     }
