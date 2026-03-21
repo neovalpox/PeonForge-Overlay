@@ -39,6 +39,12 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   text-shadow: 0 0 6px rgba(223,189,94,0.3);
   -webkit-app-region: no-drag;
 }
+.toggle-btn {
+  font-size: 10px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s;
+  padding: 1px 3px; border-radius: 3px; -webkit-app-region: no-drag;
+}
+.toggle-btn:hover { opacity: 0.8; }
+.toggle-btn.active { opacity: 1; background: rgba(223,189,94,0.15); }
 
 /* ─── Character Section ─── */
 .char-section { display: flex; gap: 10px; padding: 10px 10px 6px; }
@@ -320,6 +326,10 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   <!-- Drag Handle -->
   <div class="drag-handle">
     <span class="drag-title">PeonForge</span>
+    <div style="display:flex;gap:4px;-webkit-app-region:no-drag">
+      <span class="toggle-btn" id="toggle-sessions" title="Terminaux" onclick="toggleSection('sessions-bar','toggle-sessions')">&#x1F5A5;</span>
+      <span class="toggle-btn" id="toggle-activity" title="Activite" onclick="toggleSection('activity-section','toggle-activity')">&#x1F4CB;</span>
+    </div>
     <span class="drag-level" id="level-badge">Niv. 1</span>
   </div>
 
@@ -454,6 +464,23 @@ const EVENT_META = {
   'UserPromptSubmit':   { icon: '➤', iconCls: 'icon-prompt',     label: 'Prompt envoye',     speechKey: 'working' },
   'SessionEnd':         { icon: '■', iconCls: 'icon-session',    label: 'Session terminee',  speechKey: 'idle' },
 };
+
+// ─── Section Toggles ───
+const hiddenSections = {};
+function toggleSection(sectionId, btnId) {
+  hiddenSections[sectionId] = !hiddenSections[sectionId];
+  const el = document.getElementById(sectionId);
+  const btn = document.getElementById(btnId);
+  if (hiddenSections[sectionId]) {
+    el.style.setProperty('display', 'none', 'important');
+    btn.classList.remove('active');
+  } else {
+    el.style.removeProperty('display');
+    btn.classList.add('active');
+  }
+}
+document.getElementById('toggle-sessions')?.classList.add('active');
+document.getElementById('toggle-activity')?.classList.add('active');
 
 // ─── Init ───
 const fdata = FACTION[faction] || FACTION.human;
