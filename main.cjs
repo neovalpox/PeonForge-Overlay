@@ -146,6 +146,8 @@ let forgeToken = null;
 let forgeUrl = 'https://peonforge.ch';
 let forgeUsername = '';
 let forgeAvatar = ''; // character pack id for site display
+let forgeAchievements = []; // achievements received from forge sync
+let dailySummarySentDate = ''; // YYYY-MM-DD to avoid sending daily summary twice
 
 // ─── Single Instance ──────────────────────────────
 const gotLock = app.requestSingleInstanceLock();
@@ -387,6 +389,7 @@ function syncToForge() {
     tasks_completed: tamagotchi.tasksCompleted,
     errors_encountered: tamagotchi.errorsEncountered,
     total_work_time: tamagotchi.totalWorkTime,
+    daily_steps: tamagotchi.dailySteps,
     active_peons: activeSessions.length,
     faction,
     username: forgeUsername || undefined,
@@ -405,7 +408,21 @@ function syncToForge() {
     let body = '';
     res.on('data', c => body += c);
     res.on('end', () => {
-      try { console.log(`[PeonForge] Sync OK: level ${JSON.parse(body).level}`); } catch {}
+      try {
+        const r = JSON.parse(body);
+        console.log(`[PeonForge] Sync OK: level ${r.level}`);
+        // Handle new achievements
+        if (r.new_achievements && r.new_achievements.length > 0) {
+          for (const ach of r.new_achievements) {
+            console.log(`[PeonForge] Achievement unlocked: ${ach.name}`);
+            forgeAchievements.push(ach);
+            showOverlay(`Achievement: ${ach.name}`, faction);
+            pushCompanionUpdate({ achievement: ach });
+          }
+        }
+        // Store all achievements if provided
+        if (r.achievements) forgeAchievements = r.achievements;
+      } catch {}
     });
   });
   req.on('error', () => {});
@@ -623,6 +640,7 @@ function showCompanion() {
       characters: getCharactersPayload(),
       sessions: getSessionsPayload(),
       recentEvents: recentEvents.slice(0, 20),
+      achievements: forgeAchievements,
     });
   });
 
@@ -672,6 +690,7 @@ function getFullStateForMobile() {
     characters: getCharactersPayload(),
     username: forgeUsername,
     avatar: forgeAvatar,
+    achievements: forgeAchievements,
   });
 }
 
@@ -1594,6 +1613,20 @@ function startMoodTimer() {
       tamagotchi.lastActivity = Date.now();
     }
     saveTamagotchi();
+
+    // Daily summary at 20:00
+    const nowDate = new Date();
+    const today = nowDate.toISOString().slice(0, 10);
+    if (nowDate.getHours() >= 20 && dailySummarySentDate !== today) {
+      dailySummarySentDate = today;
+      const level = getLevel(tamagotchi.xp);
+      const hours = Math.floor(tamagotchi.totalWorkTime / 3600);
+      const mins = Math.floor((tamagotchi.totalWorkTime % 3600) / 60);
+      const summary = `${tamagotchi.tasksCompleted} taches | ${hours}h${mins}m | Niv.${level} | ${tamagotchi.dailySteps} pas`;
+      console.log(`[PeonForge] Daily summary: ${summary}`);
+      showOverlay(summary, faction);
+      pushCompanionUpdate({ dailySummary: { date: today, tasks: tamagotchi.tasksCompleted, workTime: tamagotchi.totalWorkTime, level, steps: tamagotchi.dailySteps, gold: tamagotchi.gold } });
+    }
 
     // Cleanup stale sessions (no event for 10 min)
     const now = Date.now();
