@@ -404,28 +404,32 @@ let currentMood = 'idle';
 // Mini mode: compact horizontal bar with portrait, level, XP, sessions count
 if (isMini) {
   const card = document.querySelector('.card');
-  card.style.cssText = 'width:240px;background:rgba(22,18,10,0.95);border-radius:10px;border:1.5px solid #8b6914;padding:6px 10px;-webkit-app-region:drag;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6)';
+  card.style.cssText = 'width:272px;background:rgba(22,18,10,0.95);border-radius:10px;border:1.5px solid #8b6914;padding:8px 10px;-webkit-app-region:drag;box-shadow:0 4px 20px rgba(0,0,0,0.6)';
   document.querySelector('.drag-handle').style.display = 'none';
   document.querySelector('.speech-wrap').style.display = 'none';
   document.querySelector('.sessions-bar').style.display = 'none';
   document.querySelector('.activity-section').style.display = 'none';
   document.querySelector('.session-bar').style.display = 'none';
-  document.querySelector('.char-section').style.cssText = 'display:flex;align-items:center;gap:8px;padding:0;width:100%';
+  document.querySelector('.char-section').style.cssText = 'display:flex;align-items:center;gap:8px;padding:0';
   const pf = document.querySelector('.portrait-frame');
-  pf.style.cssText = 'width:36px;height:36px;border:1.5px solid #8b6914;border-radius:6px;overflow:hidden;flex-shrink:0';
+  pf.style.cssText = 'width:32px;height:32px;border:1.5px solid #8b6914;border-radius:6px;overflow:hidden;flex-shrink:0';
   document.querySelector('.portrait-wrap').style.cssText = 'position:relative;flex-shrink:0';
-  // Compact stats
+  // Compact stats: level + XP on first row, tasks+time+usage on second
   const stats = document.querySelector('.stats');
   stats.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px';
-  document.querySelector('.char-name').style.display = 'none';
+  // In mini, replace char-name with inline level badge
+  const charName = document.querySelector('.char-name');
+  charName.style.cssText = 'font:700 10px Georgia,serif;color:#dfbd5e;display:flex;align-items:center;gap:6px';
+  charName.innerHTML = '<span id="mini-level">Niv. 1</span><span style="font:600 9px Segoe UI,sans-serif;color:#5a5040" id="mini-xp-label"></span>';
   document.querySelector('.gold-row').style.display = 'none';
   const stepsRow = document.getElementById('steps-row');
   if (stepsRow) stepsRow.style.display = 'none';
-  const usageRow = document.getElementById('usage-section');
-  if (usageRow) usageRow.style.display = 'none';
-  // Keep only XP bar and stats row
+  // Compact XP bar
   const xpRow = document.querySelector('.xp-row');
   if (xpRow) xpRow.style.cssText = 'display:flex;align-items:center;gap:4px';
+  const xpText = document.getElementById('xp-text');
+  if (xpText) xpText.style.display = 'none';
+  // Stats row compact
   const statsRow = document.querySelector('.stats-row');
   if (statsRow) statsRow.style.cssText = 'display:flex;gap:6px;font:9px "Segoe UI",sans-serif;color:#5a5040';
 }
@@ -538,6 +542,11 @@ function updateTamagotchi(tama) {
   const level = tama.level || 1;
   document.getElementById('level-badge').textContent = `Niv. ${level}`;
   document.getElementById('xp-text').textContent = `${tama.xpInLevel}/${tama.xpForLevel} XP`;
+  // Mini mode labels
+  const miniLvl = document.getElementById('mini-level');
+  if (miniLvl) miniLvl.textContent = `Niv. ${level}`;
+  const miniXp = document.getElementById('mini-xp-label');
+  if (miniXp) miniXp.textContent = `${tama.xpInLevel}/${tama.xpForLevel} XP`;
   document.getElementById('xp-fill').style.width = `${Math.round((tama.xpInLevel / tama.xpForLevel) * 100)}%`;
   document.getElementById('gold-val').textContent = tama.gold || 0;
 
