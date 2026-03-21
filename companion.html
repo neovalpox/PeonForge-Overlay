@@ -174,14 +174,29 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 8px;
-  cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
   animation: chipIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.session-chip:hover { background: rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.2); }
 @keyframes chipIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+/* Working state: glowing border pulse */
+.session-chip.working {
+  border-color: rgba(90, 255, 90, 0.25);
+  background: rgba(90, 255, 90, 0.04);
+  animation: chipWorking 2s ease infinite;
+}
+@keyframes chipWorking {
+  0%,100% { box-shadow: 0 0 4px rgba(90,255,90,0.1); border-color: rgba(90,255,90,0.15); }
+  50% { box-shadow: 0 0 10px rgba(90,255,90,0.25); border-color: rgba(90,255,90,0.35); }
+}
+
+/* Idle state: dim and slow breathe */
+.session-chip.idle {
+  opacity: 0.6;
+  border-color: rgba(139,105,20,0.15);
+}
 
 .chip-portrait {
   width: 28px; height: 28px;
@@ -196,6 +211,14 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   border-radius: 5px;
   border: 1.5px solid var(--chip-color, #8b6914);
   box-shadow: 0 0 4px var(--chip-color, rgba(139,105,20,0.3));
+}
+/* Working portrait ring animation */
+.session-chip.working .chip-portrait::after {
+  animation: portraitGlow 2s ease infinite;
+}
+@keyframes portraitGlow {
+  0%,100% { box-shadow: 0 0 4px var(--chip-color, rgba(90,255,90,0.3)); }
+  50% { box-shadow: 0 0 10px var(--chip-color, rgba(90,255,90,0.6)), 0 0 16px var(--chip-color, rgba(90,255,90,0.2)); }
 }
 
 .chip-info { min-width: 0; }
@@ -214,6 +237,7 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   background: #5aff5a;
   animation: chipPulse 1.5s ease infinite;
 }
+.chip-dot.idle { background: #8b6914; animation: none; opacity: 0.5; }
 @keyframes chipPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
 /* ─── Activity Section ─── */
@@ -544,13 +568,18 @@ function renderSessions(sessionsList) {
     const elapsed = Math.floor((Date.now() - s.startTime) / 1000);
     const m = Math.floor(elapsed / 60);
     const ss = String(elapsed % 60).padStart(2, '0');
-    return `<div class="session-chip" onclick="window.api?.focusSession('${s.id}')" title="${s.project}">` +
+    // Consider session idle if no event for >2 min
+    const lastEvent = s.lastEventTime || s.startTime;
+    const isIdle = (Date.now() - lastEvent) > 120000;
+    const state = isIdle ? 'idle' : 'working';
+    const iconSrc = c.id ? `assets/icons/${c.id}.png` : c.gif;
+    return `<div class="session-chip ${state}" title="${s.project}">` +
       `<div class="chip-portrait" style="--chip-color:${c.color}">` +
-        `<img src="${c.gif}">` +
+        `<img src="${iconSrc}" onerror="this.src='${c.gif}'">` +
       `</div>` +
       `<div class="chip-info">` +
         `<div class="chip-project">${s.project}</div>` +
-        `<div class="chip-status"><div class="chip-dot"></div> ${m}:${ss}</div>` +
+        `<div class="chip-status"><div class="chip-dot ${state}"></div> ${m}:${ss}</div>` +
       `</div>` +
     `</div>`;
   }).join('');

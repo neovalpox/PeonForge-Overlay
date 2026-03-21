@@ -593,7 +593,7 @@ function showCompanion() {
 
   const display = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;
-  const w = 280, h = 340;
+  const w = 280, h = 380;
 
   companionWindow = new BrowserWindow({
     width: w, height: h,
@@ -729,6 +729,7 @@ function getSessionsPayload() {
       character: s.character || CHARACTERS[0],
       startTime: s.startTime,
       eventCount: s.events.length,
+      lastEventTime: s.events.length > 0 ? s.events[s.events.length - 1].time : s.startTime,
       events: s.events.slice(-10).map(e => ({ event: e.event, time: e.time })),
       pid: s.pid || 0,
       hwnd: s.hwnd || 0,
