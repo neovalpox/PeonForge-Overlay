@@ -398,11 +398,20 @@ function parseClaudeUsage() {
       if (d.startsWith(monthStr)) { monthCost += v.cost; monthTokens += v.tokens; }
     }
 
+    // Calculate 5-hour window tokens (Claude Pro Max billing window)
+    const fiveHoursAgo = new Date(Date.now() - 5 * 3600 * 1000).toISOString();
+    let windowTokens = 0;
+    for (const [d, v] of Object.entries(dateCosts)) {
+      // Only today matters for the 5h window (approximate — we track per-day, not per-hour)
+      if (d === today) windowTokens = v.tokens;
+    }
+
     cachedUsage = {
       totalTokens, totalCost: Math.round(totalCost * 100) / 100,
       todayTokens, todayCost: Math.round(todayCost * 100) / 100,
       weekTokens, weekCost: Math.round(weekCost * 100) / 100,
       monthTokens, monthCost: Math.round(monthCost * 100) / 100,
+      windowTokens, // approximate 5h window (using today's total)
       lastUpdate: Date.now(),
     };
     console.log(`[PeonForge] Usage: today $${cachedUsage.todayCost} (${(cachedUsage.todayTokens/1e6).toFixed(1)}M tokens), total $${cachedUsage.totalCost}`);

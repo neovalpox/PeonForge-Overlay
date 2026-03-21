@@ -344,10 +344,15 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
         <div class="steps-bar"><div class="steps-fill" id="steps-fill" style="width:0%;background:#7aaa5a"></div></div>
         <span id="steps-pct" style="font-size:9px;color:#5a5040">0%</span>
       </div>
-      <div id="usage-section" style="display:none;display:flex;align-items:center;gap:4px;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff">
-        <span style="font-size:10px">&#x26A1;</span>
-        <span id="usage-today-tokens"></span>
-        <span style="color:#5a5040;font-weight:400;margin-left:auto" id="usage-month-tokens"></span>
+      <div id="usage-section" style="display:none">
+        <div style="display:flex;align-items:center;gap:4px;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff">
+          <span style="font-size:10px">&#x26A1;</span>
+          <span id="usage-today-tokens"></span>
+          <span style="color:#5a5040;font-weight:400;margin-left:auto" id="usage-pct"></span>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:3px">
+          <div id="usage-bar" style="height:100%;border-radius:2px;background:#64c8ff;width:0%;transition:width 0.5s,background 0.5s"></div>
+        </div>
       </div>
       <div class="stats-row">
         <span id="tasks-stat">0 taches</span>
@@ -513,13 +518,20 @@ function updateTamagotchi(tama) {
   const mins = Math.floor(((tama.totalWorkTime || 0) % 3600) / 60);
   document.getElementById('time-stat').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
 
-  // Usage stats — compact single line
+  // Usage stats — tokens + percentage bar
   const usage = tama.usage;
   if (usage && usage.todayTokens > 0) {
-    document.getElementById('usage-section').style.display = 'flex';
+    document.getElementById('usage-section').style.display = 'block';
     const fmtTok = (t) => t >= 1e9 ? (t/1e9).toFixed(1)+'G' : t >= 1e6 ? (t/1e6).toFixed(1)+'M' : t >= 1e3 ? Math.round(t/1e3)+'K' : ''+t;
     document.getElementById('usage-today-tokens').textContent = fmtTok(usage.todayTokens) + ' aujourd\'hui';
-    document.getElementById('usage-month-tokens').textContent = fmtTok(usage.monthTokens) + ' ce mois';
+
+    // Estimate usage % based on today's tokens vs Pro Max approximate capacity
+    // Pro Max ~2.5G tokens per 5h window, rough daily capacity ~8-10G
+    const capacity = 5e9; // ~5G tokens/day estimated for Pro Max
+    const pct = Math.min(100, Math.round((usage.todayTokens / capacity) * 100));
+    document.getElementById('usage-pct').textContent = pct + '%';
+    document.getElementById('usage-bar').style.width = pct + '%';
+    document.getElementById('usage-bar').style.background = pct >= 80 ? '#ff5050' : pct >= 50 ? '#dfbd5e' : '#64c8ff';
   }
 
   // Level up effect
