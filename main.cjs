@@ -331,7 +331,8 @@ function loadForgeConfig() {
     if (fs.existsSync(FORGE_CONFIG)) {
       const c = JSON.parse(fs.readFileSync(FORGE_CONFIG, 'utf-8'));
       forgeToken = c.token || null;
-      forgeUrl = c.url || forgeUrl;
+      // Ignore localhost URLs from old configs
+      if (c.url && !c.url.includes('localhost')) forgeUrl = c.url;
       forgeUsername = c.username || '';
       forgeAvatar = c.avatar || '';
     }
