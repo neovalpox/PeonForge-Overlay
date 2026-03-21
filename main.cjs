@@ -912,8 +912,24 @@ function handleHookEvent(data) {
       break;
   }
 
+  // Pick a voice line for events that trigger mobile notifications
+  let eventVoiceLine = null;
+  if (displayEvent === 'PermissionRequest' || displayEvent === 'SubagentStart') {
+    const charPackId = session.character?.id || (faction === 'orc' ? 'peon_fr' : 'peasant_fr');
+    const category = displayEvent === 'PermissionRequest' ? 'input.required' : 'task.acknowledge';
+    try {
+      const packDir = path.join(PEON_PACKS_DIR, charPackId);
+      const mf = JSON.parse(fs.readFileSync(path.join(packDir, 'openpeon.json'), 'utf-8'));
+      const sounds = mf.categories?.[category]?.sounds || [];
+      if (sounds.length > 0) {
+        const chosen = sounds[Math.floor(Math.random() * sounds.length)];
+        eventVoiceLine = { file: path.basename(chosen.file), pack: charPackId };
+      }
+    } catch {}
+  }
+
   pushCompanionUpdate({
-    event: { type: displayEvent, project: session.project, sessionId, character: session.character },
+    event: { type: displayEvent, project: session.project, sessionId, character: session.character, voiceLine: eventVoiceLine },
     tamagotchi: getTamagotchiPayload(),
     mood: getMood(),
     sessions: getSessionsPayload(),
