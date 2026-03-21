@@ -416,6 +416,7 @@ const EVENT_META = {
 
 // ─── Init ───
 const fdata = FACTION[faction] || FACTION.human;
+// Portrait will be updated by first IPC update with avatar
 document.getElementById('portrait').src = fdata.gif;
 document.getElementById('char-name').textContent = fdata.name;
 
@@ -616,14 +617,25 @@ setInterval(() => {
 
 // ─── IPC Updates from main ───
 window.api?.onUpdate((data) => {
+  // Avatar change
+  if (data.avatar) {
+    const portrait = document.getElementById('portrait');
+    portrait.src = `assets/icons/${data.avatar}.png`;
+    portrait.onerror = () => { portrait.src = (FACTION[faction] || FACTION.human).gif; };
+    // Find character name from catalog
+    const charInfo = (data.characters || []).find(c => c.id === data.avatar);
+    if (charInfo) document.getElementById('char-name').textContent = charInfo.name;
+  }
+
   // Faction change
   if (data.faction && data.faction !== faction) {
     faction = data.faction;
     const fd = FACTION[faction] || FACTION.human;
-    document.getElementById('portrait').src = fd.gif;
-    document.getElementById('char-name').textContent = fd.name;
-    Object.assign(fdata, fd); // update reference... actually need to reassign
-    // Can't reassign const, so we'll read from FACTION[faction] in randomSpeech
+    if (!data.avatar) {
+      document.getElementById('portrait').src = fd.gif;
+      document.getElementById('char-name').textContent = fd.name;
+    }
+    Object.assign(fdata, fd);
   }
 
   // Mood

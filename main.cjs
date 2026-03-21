@@ -619,6 +619,8 @@ function showCompanion() {
       tamagotchi: getTamagotchiPayload(),
       mood: getMood(),
       faction,
+      avatar: forgeAvatar,
+      characters: getCharactersPayload(),
       sessions: getSessionsPayload(),
       recentEvents: recentEvents.slice(0, 20),
     });
@@ -1203,6 +1205,7 @@ function startServer() {
             saveForgeConfig();
             syncToForge();
             broadcastToMobile({ avatar: forgeAvatar });
+            pushCompanionUpdate({ avatar: forgeAvatar, characters: getCharactersPayload() });
             console.log(`[PeonForge] Avatar set to: ${charInfo.name}`);
           }
         }
