@@ -79,18 +79,11 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   100% { box-shadow: 0 0 8px rgba(139,105,20,0.3); }
 }
 
-/* Spinner ring during work */
-.work-ring {
-  position: absolute; inset: -4px;
-  border: 2px solid transparent;
-  border-top-color: #dfbd5e;
-  border-radius: 50%;
-  animation: spin 1.5s linear infinite;
-  opacity: 0;
-  transition: opacity 0.3s;
+/* Working indicator — subtle glow pulse instead of spinner */
+.work-ring { display: none; }
+.mood-working .portrait-frame {
+  box-shadow: 0 0 12px rgba(100,200,100,0.4);
 }
-.mood-working .work-ring { opacity: 1; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Stats */
 .stats { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
@@ -409,7 +402,21 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
 <script>
 const params = new URLSearchParams(window.location.search);
 let faction = decodeURIComponent(params.get('faction') || 'human');
+const isMini = params.get('mini') === '1';
 let currentMood = 'idle';
+
+// Mini mode: hide everything except portrait + level
+if (isMini) {
+  document.querySelector('.card').style.cssText = 'width:72px;background:rgba(22,18,10,0.9);border-radius:12px;border:1.5px solid #8b6914;padding:4px;-webkit-app-region:drag';
+  document.querySelector('.drag-handle').style.display = 'none';
+  document.querySelector('.stats').style.display = 'none';
+  document.querySelector('.speech-wrap').style.display = 'none';
+  document.querySelector('.sessions-bar').style.display = 'none';
+  document.querySelector('.activity-section').style.display = 'none';
+  document.querySelector('.session-bar').style.display = 'none';
+  const pf = document.querySelector('.portrait-frame');
+  pf.style.width = '64px'; pf.style.height = '64px';
+}
 let sessionStartTime = null;
 let sessionEventCount = 0;
 let previousLevel = 1;
@@ -533,18 +540,18 @@ function updateTamagotchi(tama) {
     document.getElementById('usage-today-tokens').textContent = fmtTok(usage.todayTokens) + ' tokens';
     document.getElementById('usage-month-tokens').textContent = fmtTok(usage.monthTokens) + ' ce mois';
 
-    // Progress bars based on token volume (day: 500M, week: 2G, month: 5G)
-    const dayPct = Math.min(100, (usage.todayTokens / 500e6) * 100);
-    const weekPct = Math.min(100, (usage.weekTokens / 2e9) * 100);
-    const monthPct = Math.min(100, (usage.monthTokens / 5e9) * 100);
+    // Progress bars relative to each other (month = 100%, others proportional)
+    const maxMonth = Math.max(usage.monthTokens, 1);
+    const dayPct = Math.min(100, (usage.todayTokens / maxMonth) * 100);
+    const weekPct = Math.min(100, (usage.weekTokens / maxMonth) * 100);
+    const monthPct = 100;
     document.getElementById('usage-bar-day').style.width = dayPct + '%';
     document.getElementById('usage-bar-week').style.width = weekPct + '%';
     document.getElementById('usage-bar-month').style.width = monthPct + '%';
 
-    const barColor = (pct, base) => pct >= 80 ? '#ff5050' : pct >= 50 ? '#dfbd5e' : base;
-    document.getElementById('usage-bar-day').style.background = barColor(dayPct, '#64c8ff');
-    document.getElementById('usage-bar-week').style.background = barColor(weekPct, '#b482ff');
-    document.getElementById('usage-bar-month').style.background = barColor(monthPct, '#dfbd5e');
+    document.getElementById('usage-bar-day').style.background = '#64c8ff';
+    document.getElementById('usage-bar-week').style.background = '#b482ff';
+    document.getElementById('usage-bar-month').style.background = '#dfbd5e';
 
     document.getElementById('usage-lbl-day').textContent = 'J: ' + fmtTok(usage.todayTokens);
     document.getElementById('usage-lbl-week').textContent = 'S: ' + fmtTok(usage.weekTokens);

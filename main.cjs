@@ -18,6 +18,7 @@ let serverInstance = null;
 let faction = 'human';
 let side = 'alliance';
 let showCompanionWidget = true;  // toggle peon overlay
+let companionMini = false;       // mini mode: smaller, portrait only
 let showNotifications = true;    // toggle WC3 notifications
 let volume = 0.7;
 let watching = true;
@@ -632,6 +633,7 @@ function updateTrayMenu() {
     { label: 'Ouvrir les parametres', click: openSettings },
     { label: 'Connecter mobile (QR)', click: () => openPairing() },
     { label: 'Tester la notification', click: () => { showOverlay('TestProject', faction); playPeonSound(); } },
+    { label: companionMini ? 'Mode complet' : 'Mode mini', click: toggleCompanionMini },
     { type: 'separator' },
     {
       label: 'Camp',
@@ -743,7 +745,8 @@ function showCompanion() {
 
   const display = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;
-  const w = 280, h = 400;
+  const w = companionMini ? 80 : 280;
+  const h = companionMini ? 80 : 400;
 
   companionWindow = new BrowserWindow({
     width: w, height: h,
@@ -761,7 +764,7 @@ function showCompanion() {
   });
 
   const f = encodeURIComponent(faction);
-  companionWindow.loadFile('companion.html', { query: { faction: f } });
+  companionWindow.loadFile('companion.html', { query: { faction: f, mini: companionMini ? '1' : '' } });
 
   companionWindow.webContents.on('did-finish-load', () => {
     // Send initial state
@@ -778,6 +781,16 @@ function showCompanion() {
   });
 
   companionWindow.on('closed', () => { companionWindow = null; });
+}
+
+function toggleCompanionMini() {
+  companionMini = !companionMini;
+  if (companionWindow && !companionWindow.isDestroyed()) {
+    companionWindow.close();
+    companionWindow = null;
+  }
+  showCompanion();
+  updateTrayMenu();
 }
 
 function pushCompanionUpdate(data) {
