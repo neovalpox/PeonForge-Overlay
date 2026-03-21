@@ -347,6 +347,7 @@ function saveForgeConfig() {
 function registerOnForge(username) {
   const data = JSON.stringify({ username, faction });
   const url = new URL(forgeUrl + '/api/register');
+  console.log(`[PeonForge] Registering "${username}" on ${url.href}...`);
   const reqModule = url.protocol === 'https:' ? require('https') : http;
   const req = reqModule.request({
     hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80), path: url.pathname,
@@ -368,10 +369,10 @@ function registerOnForge(username) {
           console.log(`[PeonForge] Register failed: ${r.error}`);
           broadcastToMobile({ registerError: r.error });
         }
-      } catch {}
+      } catch (e) { console.log(`[PeonForge] Register parse error: ${e.message}`); }
     });
   });
-  req.on('error', () => {});
+  req.on('error', (e) => { console.log(`[PeonForge] Register network error: ${e.message}`); });
   req.write(data);
   req.end();
 }
