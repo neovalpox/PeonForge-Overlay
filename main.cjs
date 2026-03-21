@@ -355,9 +355,53 @@ function parseClaudeUsage() {
       }
     }
 
+    // Calculate week and month boundaries
+    const now = new Date();
+    const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); // Sunday
+    const weekStr = weekStart.toISOString().slice(0, 10);
+    const monthStr = now.toISOString().slice(0, 7); // YYYY-MM
+
+    let weekTokens = 0, weekCost = 0, monthTokens = 0, monthCost = 0;
+    // Re-scan with date grouping (we already parsed everything above)
+    // Use a second pass on the lines we already found
+    // Actually let's track per-date costs during the main loop above
+    // For simplicity, estimate from the daily totals
+    // The main loop already computed today — we need to re-parse for week/month
+    // Let's just scan the files again quickly for dates
+    const dateCosts = {};
+    for (const dir of dirs) {
+      const projPath = path.join(projectsDir, dir.name);
+      const files2 = fs.readdirSync(projPath).filter(f => f.endsWith('.jsonl'));
+      for (const file of files2) {
+        try {
+          const content2 = fs.readFileSync(path.join(projPath, file), 'utf-8');
+          const lines2 = content2.split('\n').filter(l => l.includes('"usage"'));
+          for (const line of lines2) {
+            try {
+              const obj2 = JSON.parse(line);
+              const u2 = obj2?.message?.usage || obj2?.usage;
+              if (!u2 || !obj2.timestamp) continue;
+              const d2 = new Date(obj2.timestamp).toISOString().slice(0, 10);
+              const cost2 = (u2.input_tokens||0)*pricing.input + (u2.output_tokens||0)*pricing.output + (u2.cache_creation_input_tokens||0)*pricing.cacheWrite + (u2.cache_read_input_tokens||0)*pricing.cacheRead;
+              const tok2 = (u2.input_tokens||0) + (u2.output_tokens||0) + (u2.cache_creation_input_tokens||0) + (u2.cache_read_input_tokens||0);
+              if (!dateCosts[d2]) dateCosts[d2] = { cost: 0, tokens: 0 };
+              dateCosts[d2].cost += cost2;
+              dateCosts[d2].tokens += tok2;
+            } catch {}
+          }
+        } catch {}
+      }
+    }
+    for (const [d, v] of Object.entries(dateCosts)) {
+      if (d >= weekStr) { weekCost += v.cost; weekTokens += v.tokens; }
+      if (d.startsWith(monthStr)) { monthCost += v.cost; monthTokens += v.tokens; }
+    }
+
     cachedUsage = {
       totalTokens, totalCost: Math.round(totalCost * 100) / 100,
       todayTokens, todayCost: Math.round(todayCost * 100) / 100,
+      weekTokens, weekCost: Math.round(weekCost * 100) / 100,
+      monthTokens, monthCost: Math.round(monthCost * 100) / 100,
       lastUpdate: Date.now(),
     };
     console.log(`[PeonForge] Usage: today $${cachedUsage.todayCost} (${(cachedUsage.todayTokens/1e6).toFixed(1)}M tokens), total $${cachedUsage.totalCost}`);
