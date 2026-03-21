@@ -121,6 +121,12 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   font: 600 11px 'Segoe UI', sans-serif; color: #ffd700;
   text-shadow: 0 0 4px rgba(255,215,0,0.2);
 }
+.steps-row {
+  display: flex; align-items: center; gap: 4px;
+  font: 600 10px 'Segoe UI', sans-serif; color: #7aaa5a;
+}
+.steps-row .steps-bar { flex: 1; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.steps-row .steps-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
 .stats-row {
   display: flex; gap: 8px;
   font: 10px 'Segoe UI', sans-serif; color: #5a5040;
@@ -315,6 +321,12 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
         <span class="xp-text" id="xp-text">0 XP</span>
       </div>
       <div class="gold-row">&#x1FA99; <span id="gold-val">0</span></div>
+      <div class="steps-row" id="steps-row" style="display:none">
+        <span>&#x1F6B6;</span>
+        <span id="steps-val">0</span>
+        <div class="steps-bar"><div class="steps-fill" id="steps-fill" style="width:0%;background:#7aaa5a"></div></div>
+        <span id="steps-pct" style="font-size:9px;color:#5a5040">0%</span>
+      </div>
       <div class="stats-row">
         <span id="tasks-stat">0 taches</span>
         <span>·</span>
@@ -443,6 +455,21 @@ function updateTamagotchi(tama) {
   document.getElementById('xp-text').textContent = `${tama.xpInLevel}/${tama.xpForLevel} XP`;
   document.getElementById('xp-fill').style.width = `${Math.round((tama.xpInLevel / tama.xpForLevel) * 100)}%`;
   document.getElementById('gold-val').textContent = tama.gold || 0;
+
+  // Steps
+  const steps = tama.dailySteps || 0;
+  const stepsRow = document.getElementById('steps-row');
+  if (steps > 0 || tama.happiness !== undefined) {
+    stepsRow.style.display = 'flex';
+    const pct = Math.min(100, Math.floor(steps / 100));
+    const color = pct > 60 ? '#7aaa5a' : pct > 30 ? '#dfbd5e' : '#cc4444';
+    document.getElementById('steps-val').textContent = steps >= 1000 ? `${(steps/1000).toFixed(1).replace('.0','')}k` : steps;
+    document.getElementById('steps-fill').style.width = `${pct}%`;
+    document.getElementById('steps-fill').style.background = color;
+    document.getElementById('steps-pct').textContent = `${pct}%`;
+    document.getElementById('steps-pct').style.color = color;
+  }
+
   document.getElementById('tasks-stat').textContent = `${tama.tasksCompleted || 0} taches`;
 
   const hours = Math.floor((tama.totalWorkTime || 0) / 3600);
