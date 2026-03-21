@@ -351,6 +351,12 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
         <div class="steps-bar"><div class="steps-fill" id="steps-fill" style="width:0%;background:#7aaa5a"></div></div>
         <span id="steps-pct" style="font-size:9px;color:#5a5040">0%</span>
       </div>
+      <div id="usage-row" style="display:none;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff;display:flex;align-items:center;gap:4px">
+        <span style="font-size:10px">&#x26A1;</span>
+        <span id="usage-today">$0</span>
+        <span style="color:#5a5040;font-weight:400">aujourd'hui</span>
+        <span style="color:#5a5040;margin-left:auto;font-weight:400" id="usage-tokens"></span>
+      </div>
       <div class="stats-row">
         <span id="tasks-stat">0 taches</span>
         <span>·</span>
@@ -500,6 +506,16 @@ function updateTamagotchi(tama) {
   const hours = Math.floor((tama.totalWorkTime || 0) / 3600);
   const mins = Math.floor(((tama.totalWorkTime || 0) % 3600) / 60);
   document.getElementById('time-stat').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+
+  // Usage stats
+  const usage = tama.usage;
+  if (usage && usage.todayCost > 0) {
+    const row = document.getElementById('usage-row');
+    row.style.display = 'flex';
+    document.getElementById('usage-today').textContent = `$${usage.todayCost.toFixed(2)}`;
+    const mt = usage.todayTokens >= 1e6 ? `${(usage.todayTokens/1e6).toFixed(1)}M` : `${Math.round(usage.todayTokens/1e3)}K`;
+    document.getElementById('usage-tokens').textContent = mt + ' tokens';
+  }
 
   // Level up effect
   if (level > previousLevel) {

@@ -300,6 +300,71 @@ function applyHappinessDecay() {
   tamagotchi.happiness = getHappiness();
 }
 
+// ─── Claude Usage Stats (ccusage) ────────────────
+const CLAUDE_DIR = path.join(os.homedir(), '.claude');
+let cachedUsage = { totalTokens: 0, totalCost: 0, todayTokens: 0, todayCost: 0, lastUpdate: 0 };
+
+function parseClaudeUsage() {
+  try {
+    const projectsDir = path.join(CLAUDE_DIR, 'projects');
+    if (!fs.existsSync(projectsDir)) return cachedUsage;
+
+    // Only refresh every 5 min
+    if (Date.now() - cachedUsage.lastUpdate < 300000) return cachedUsage;
+
+    const today = new Date().toISOString().slice(0, 10);
+    let totalTokens = 0, totalCost = 0, todayTokens = 0, todayCost = 0;
+
+    // Pricing per token (approximate, Opus 4.6 rates)
+    const pricing = {
+      input: 15 / 1e6, output: 75 / 1e6,
+      cacheWrite: 3.75 / 1e6, cacheRead: 0.30 / 1e6,
+    };
+
+    const dirs = fs.readdirSync(projectsDir, { withFileTypes: true }).filter(d => d.isDirectory());
+    for (const dir of dirs) {
+      const projPath = path.join(projectsDir, dir.name);
+      const files = fs.readdirSync(projPath).filter(f => f.endsWith('.jsonl'));
+      for (const file of files) {
+        try {
+          const content = fs.readFileSync(path.join(projPath, file), 'utf-8');
+          const lines = content.split('\n').filter(l => l.includes('"usage"'));
+          for (const line of lines) {
+            try {
+              const obj = JSON.parse(line);
+              const u = obj?.message?.usage || obj?.usage;
+              if (!u) continue;
+              const inp = u.input_tokens || 0;
+              const out = u.output_tokens || 0;
+              const cw = u.cache_creation_input_tokens || 0;
+              const cr = u.cache_read_input_tokens || 0;
+              const tokens = inp + out + cw + cr;
+              const cost = inp * pricing.input + out * pricing.output + cw * pricing.cacheWrite + cr * pricing.cacheRead;
+              totalTokens += tokens;
+              totalCost += cost;
+
+              // Check if today
+              const ts = obj.timestamp;
+              if (ts) {
+                const d = new Date(ts).toISOString().slice(0, 10);
+                if (d === today) { todayTokens += tokens; todayCost += cost; }
+              }
+            } catch {}
+          }
+        } catch {}
+      }
+    }
+
+    cachedUsage = {
+      totalTokens, totalCost: Math.round(totalCost * 100) / 100,
+      todayTokens, todayCost: Math.round(todayCost * 100) / 100,
+      lastUpdate: Date.now(),
+    };
+    console.log(`[PeonForge] Usage: today $${cachedUsage.todayCost} (${(cachedUsage.todayTokens/1e6).toFixed(1)}M tokens), total $${cachedUsage.totalCost}`);
+  } catch {}
+  return cachedUsage;
+}
+
 function getTamagotchiPayload() {
   const level = getLevel(tamagotchi.xp);
   const prevXP = getLevelXP(level);
@@ -317,6 +382,7 @@ function getTamagotchiPayload() {
     lastFed: tamagotchi.lastFed,
     lastPet: tamagotchi.lastPet,
     xpBoost: tamagotchi.xpBoostUntil > Date.now(),
+    usage: parseClaudeUsage(),
   };
 }
 
@@ -633,7 +699,7 @@ function showCompanion() {
 
   const display = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;
-  const w = 280, h = 380;
+  const w = 280, h = 400;
 
   companionWindow = new BrowserWindow({
     width: w, height: h,
