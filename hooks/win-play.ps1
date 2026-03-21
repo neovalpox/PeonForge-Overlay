@@ -5,6 +5,10 @@ param(
     [double]$vol
 )
 
+# Kill any previous peon sound still playing (prevents overlap/loop)
+Get-Process ffplay -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process mpv -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq '' } | Stop-Process -Force -ErrorAction SilentlyContinue
+
 # Priority: ffplay (supports volume for all formats) -> mpv -> vlc -> SoundPlayer (WAV only, no volume)
 
 # ffplay: volume 0-100 integer scale

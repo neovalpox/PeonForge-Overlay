@@ -143,7 +143,7 @@ const PUBLIC_ENDPOINTS = ['/discover', '/status'];
 
 // PeonForge sync
 let forgeToken = null;
-let forgeUrl = 'http://localhost:5000';
+let forgeUrl = 'https://peonforge.ch';
 let forgeUsername = '';
 let forgeAvatar = ''; // character pack id for site display
 
@@ -413,10 +413,16 @@ function syncToForge() {
 
 function startForgeSync() {
   loadForgeConfig();
+  if (!forgeToken) {
+    // Auto-register with hostname if no token yet
+    const name = os.hostname().slice(0, 20) || 'Peon';
+    console.log(`[PeonForge] No forge token, auto-registering as "${name}"...`);
+    registerOnForge(name);
+  }
   if (forgeToken) {
     syncToForge();
-    setInterval(syncToForge, 5 * 60 * 1000); // every 5 min
   }
+  setInterval(() => { if (forgeToken) syncToForge(); }, 5 * 60 * 1000);
 }
 
 // ─── Tray Icon ────────────────────────────────────
