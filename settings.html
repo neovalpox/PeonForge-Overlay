@@ -45,6 +45,7 @@ body { display: flex; align-items: center; justify-content: center; -webkit-app-
   flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.25s;
   text-align: center; color: #8a8aaa; font-size: 13px; font-weight: 600;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .faction-btn:hover { background: rgba(255,255,255,0.04); }
 .faction-btn.active.human { border-color: #00aaff; color: #00aaff; background: rgba(0,170,255,0.08); box-shadow: 0 0 16px rgba(0,170,255,0.12); }
@@ -136,8 +137,14 @@ input[type="range"]::-webkit-slider-thumb {
     <div class="section">
       <div class="section-title">Camp</div>
       <div class="faction-row">
-        <button class="faction-btn human" id="btn-alliance" onclick="selectSide('alliance')">Alliance</button>
-        <button class="faction-btn orc" id="btn-horde" onclick="selectSide('horde')">Horde</button>
+        <button class="faction-btn human" id="btn-alliance" onclick="selectSide('alliance')">
+          <svg viewBox="0 0 64 64" width="28" height="28" style="fill:currentColor;margin-bottom:2px"><path d="M32 4C18 4 8 14 8 28c0 10 6 18 14 22l2-6c-4-3-6-8-6-14 0-8 6-16 14-16s14 8 14 16c0 6-2 11-6 14l2 6c8-4 14-12 14-22C56 14 46 4 32 4zm0 12c-6 0-10 5-10 12s4 12 10 12 10-5 10-12-4-12-10-12zm0 6c2 0 4 3 4 6s-2 6-4 6-4-3-4-6 2-6 4-6z"/></svg>
+          <span style="font-size:10px">Alliance</span>
+        </button>
+        <button class="faction-btn orc" id="btn-horde" onclick="selectSide('horde')">
+          <svg viewBox="0 0 64 64" width="28" height="28" style="fill:currentColor;margin-bottom:2px"><path d="M32 2L20 18l-8-4-2 14 8 6-6 12 10 2 4 12h12l4-12 10-2-6-12 8-6-2-14-8 4L32 2zm0 16c4 0 8 4 8 10 0 4-2 7-4 8v6h-8v-6c-2-1-4-4-4-8 0-6 4-10 8-10zm-2 10a2 2 0 104 0 2 2 0 10-4 0z"/></svg>
+          <span style="font-size:10px">Horde</span>
+        </button>
       </div>
     </div>
 
