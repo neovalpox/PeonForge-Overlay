@@ -640,6 +640,12 @@ function startIdleSpeech() {
 }
 startIdleSpeech();
 
+// Horizontal scroll with mouse wheel on sessions bar
+document.getElementById('sessions-bar').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  document.getElementById('sessions-bar').scrollLeft += e.deltaY;
+}, { passive: false });
+
 // Refresh sessions bar timers every 10s
 setInterval(() => {
   if (activeSessions.length > 1) renderSessions(activeSessions);
