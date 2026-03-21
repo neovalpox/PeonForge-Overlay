@@ -246,10 +246,33 @@ function addXP(xp, gold) {
   if (getHappiness() > 80) gold = Math.round(gold * 1.1);
   // Happiness penalty: -50% XP if happiness == 0
   if (getHappiness() === 0) xp = Math.round(xp * 0.5);
+  const prevLevel = getLevel(tamagotchi.xp);
   tamagotchi.xp += xp;
   tamagotchi.gold = Math.max(0, tamagotchi.gold + gold);
   tamagotchi.lastActivity = Date.now();
+  const newLevel = getLevel(tamagotchi.xp);
   saveTamagotchi();
+
+  // Easter eggs — special celebrations at milestones
+  if (newLevel > prevLevel) {
+    const milestones = { 10: 'Apprenti !', 25: 'Veteran !', 50: 'Maitre !', 100: 'Legende !' };
+    if (milestones[newLevel]) {
+      console.log(`[PeonForge] MILESTONE: Level ${newLevel} — ${milestones[newLevel]}`);
+      showOverlay(`Niveau ${newLevel} — ${milestones[newLevel]}`, faction);
+      playSound('task.complete');
+      setTimeout(() => { playSound('task.complete'); }, 1500);
+      pushCompanionUpdate({ milestone: { level: newLevel, title: milestones[newLevel] } });
+    }
+  }
+
+  // Task milestones
+  const taskMilestones = { 100: 'Centurion !', 500: 'Commander !', 1000: 'Maitre des taches !', 5000: 'Legendaire !' };
+  if (taskMilestones[tamagotchi.tasksCompleted]) {
+    const title = taskMilestones[tamagotchi.tasksCompleted];
+    console.log(`[PeonForge] MILESTONE: ${tamagotchi.tasksCompleted} tasks — ${title}`);
+    showOverlay(`${tamagotchi.tasksCompleted} taches — ${title}`, faction);
+    pushCompanionUpdate({ milestone: { tasks: tamagotchi.tasksCompleted, title } });
+  }
 }
 
 function getMood() {
