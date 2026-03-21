@@ -33,8 +33,8 @@ let sessionCharCounter = 0;
 
 // Character pool for multi-session avatars
 const CHARACTERS = [
-  { id: 'peasant', name: 'Paysan', gif: 'assets/peasant.gif', color: '#64c8ff' },
-  { id: 'peon', name: 'Peon', gif: 'assets/peon.gif', color: '#ff6644' },
+  { id: 'peasant_fr', name: 'Paysan', gif: 'assets/peasant.gif', color: '#64c8ff' },
+  { id: 'peon_fr', name: 'Peon', gif: 'assets/peon.gif', color: '#ff6644' },
 ];
 
 // Tamagotchi state
@@ -260,7 +260,7 @@ function addXP(xp, gold) {
     const milestones = { 10: 'Apprenti !', 25: 'Veteran !', 50: 'Maitre !', 100: 'Legende !' };
     if (milestones[newLevel]) {
       console.log(`[PeonForge] MILESTONE: Level ${newLevel} — ${milestones[newLevel]}`);
-      showOverlay(`Niveau ${newLevel} — ${milestones[newLevel]}`, faction);
+      showOverlay(`Niveau ${newLevel} — ${milestones[newLevel]}`, faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
       playSound('task.complete');
       setTimeout(() => { playSound('task.complete'); }, 1500);
       pushCompanionUpdate({ milestone: { level: newLevel, title: milestones[newLevel] } });
@@ -272,7 +272,7 @@ function addXP(xp, gold) {
   if (taskMilestones[tamagotchi.tasksCompleted]) {
     const title = taskMilestones[tamagotchi.tasksCompleted];
     console.log(`[PeonForge] MILESTONE: ${tamagotchi.tasksCompleted} tasks — ${title}`);
-    showOverlay(`${tamagotchi.tasksCompleted} taches — ${title}`, faction);
+    showOverlay(`${tamagotchi.tasksCompleted} taches — ${title}`, faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
     pushCompanionUpdate({ milestone: { tasks: tamagotchi.tasksCompleted, title } });
   }
 }
@@ -560,7 +560,7 @@ function syncToForge() {
           for (const ach of r.new_achievements) {
             console.log(`[PeonForge] Achievement unlocked: ${ach.name}`);
             forgeAchievements.push(ach);
-            showOverlay(`Achievement: ${ach.name}`, faction);
+            showOverlay(`Achievement: ${ach.name}`, faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
             pushCompanionUpdate({ achievement: ach });
           }
         }
@@ -642,7 +642,7 @@ function updateTrayMenu() {
     { type: 'separator' },
     { label: 'Ouvrir les parametres', click: openSettings },
     { label: 'Connecter mobile (QR)', click: () => openPairing() },
-    { label: 'Tester la notification', click: () => { showOverlay('TestProject', faction); playPeonSound(); } },
+    { label: 'Tester la notification', click: () => { showOverlay('TestProject', faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr')); playPeonSound(); } },
     { label: companionMini ? 'Mode complet' : 'Mode mini', click: toggleCompanionMini },
     { type: 'separator' },
     {
@@ -1125,7 +1125,7 @@ function startServer() {
       if (stat.mtimeMs > lastEventTime) {
         lastEventTime = Date.now();
         const data = JSON.parse(fs.readFileSync(triggerFile, 'utf-8'));
-        showOverlay(data.project || 'Projet', data.faction || faction);
+        showOverlay(data.project || 'Projet', data.faction || faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
         playPeonSound();
       }
     } catch {}
@@ -1154,7 +1154,7 @@ function startServer() {
         try {
           const data = JSON.parse(body);
           if (watching) {
-            showOverlay(data.project || 'Projet', data.faction || faction);
+            showOverlay(data.project || 'Projet', data.faction || faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
             playPeonSound();
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1350,7 +1350,7 @@ function startServer() {
           }
         }
         if (msg.type === 'test-notification') {
-          showOverlay('TestProject', faction);
+          showOverlay('TestProject', faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
           playPeonSound();
         }
         if (msg.type === 'focus-terminal') {
@@ -1781,7 +1781,7 @@ function startMoodTimer() {
       const mins = Math.floor((tamagotchi.totalWorkTime % 3600) / 60);
       const summary = `${tamagotchi.tasksCompleted} taches | ${hours}h${mins}m | Niv.${level} | ${tamagotchi.dailySteps} pas`;
       console.log(`[PeonForge] Daily summary: ${summary}`);
-      showOverlay(summary, faction);
+      showOverlay(summary, faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr'));
       pushCompanionUpdate({ dailySummary: { date: today, tasks: tamagotchi.tasksCompleted, workTime: tamagotchi.totalWorkTime, level, steps: tamagotchi.dailySteps, gold: tamagotchi.gold } });
     }
 
@@ -1841,7 +1841,7 @@ ipcMain.on('settings:set-faction', (e, f) => setFaction(f));
 ipcMain.on('settings:set-sound', (e, v) => { soundEnabled = v; saveConfig(); updateTrayMenu(); });
 ipcMain.on('settings:set-watching', (e, v) => { watching = v; saveConfig(); updateTrayMenu(); });
 ipcMain.on('settings:set-volume', (e, v) => { volume = v; saveConfig(); syncVolumeToHooks(); });
-ipcMain.on('settings:test', () => { showOverlay('TestProject', faction); playPeonSound(); });
+ipcMain.on('settings:test', () => { showOverlay('TestProject', faction, forgeAvatar || (faction === 'orc' ? 'peon_fr' : 'peasant_fr')); playPeonSound(); });
 ipcMain.on('settings:close', () => { if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.close(); });
 ipcMain.on('settings:get-history', (e) => {
   try {
