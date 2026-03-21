@@ -344,29 +344,10 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
         <div class="steps-bar"><div class="steps-fill" id="steps-fill" style="width:0%;background:#7aaa5a"></div></div>
         <span id="steps-pct" style="font-size:9px;color:#5a5040">0%</span>
       </div>
-      <div id="usage-section" style="display:none">
-        <div style="display:flex;align-items:center;gap:4px;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff;margin-bottom:3px">
-          <span style="font-size:10px">&#x26A1;</span>
-          <span id="usage-today-tokens"></span>
-          <span style="color:#5a5040;font-weight:400">aujourd'hui</span>
-          <span style="color:#5a5040;margin-left:auto;font-weight:400" id="usage-month-tokens"></span>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center">
-          <div style="flex:1" title="Jour">
-            <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div id="usage-bar-day" style="height:100%;border-radius:2px;background:#64c8ff;width:0%;transition:width 0.5s"></div></div>
-          </div>
-          <div style="flex:1" title="Semaine">
-            <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div id="usage-bar-week" style="height:100%;border-radius:2px;background:#b482ff;width:0%;transition:width 0.5s"></div></div>
-          </div>
-          <div style="flex:1" title="Mois">
-            <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden"><div id="usage-bar-month" style="height:100%;border-radius:2px;background:#dfbd5e;width:0%;transition:width 0.5s"></div></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;font:400 7px 'Segoe UI',sans-serif;color:#5a5040;margin-top:1px">
-          <span style="flex:1;color:#64c8ff" id="usage-lbl-day">J: 0M</span>
-          <span style="flex:1;color:#b482ff" id="usage-lbl-week">S: 0M</span>
-          <span style="flex:1;color:#dfbd5e" id="usage-lbl-month">M: 0M</span>
-        </div>
+      <div id="usage-section" style="display:none;display:flex;align-items:center;gap:4px;font:600 9px 'Segoe UI',sans-serif;color:#64c8ff">
+        <span style="font-size:10px">&#x26A1;</span>
+        <span id="usage-today-tokens"></span>
+        <span style="color:#5a5040;font-weight:400;margin-left:auto" id="usage-month-tokens"></span>
       </div>
       <div class="stats-row">
         <span id="tasks-stat">0 taches</span>
@@ -532,30 +513,13 @@ function updateTamagotchi(tama) {
   const mins = Math.floor(((tama.totalWorkTime || 0) % 3600) / 60);
   document.getElementById('time-stat').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
 
-  // Usage stats (tokens, not $)
+  // Usage stats — compact single line
   const usage = tama.usage;
-  if (usage && (usage.todayTokens > 0 || usage.weekTokens > 0)) {
-    document.getElementById('usage-section').style.display = 'block';
+  if (usage && usage.todayTokens > 0) {
+    document.getElementById('usage-section').style.display = 'flex';
     const fmtTok = (t) => t >= 1e9 ? (t/1e9).toFixed(1)+'G' : t >= 1e6 ? (t/1e6).toFixed(1)+'M' : t >= 1e3 ? Math.round(t/1e3)+'K' : ''+t;
-    document.getElementById('usage-today-tokens').textContent = fmtTok(usage.todayTokens) + ' tokens';
+    document.getElementById('usage-today-tokens').textContent = fmtTok(usage.todayTokens) + ' aujourd\'hui';
     document.getElementById('usage-month-tokens').textContent = fmtTok(usage.monthTokens) + ' ce mois';
-
-    // Progress bars relative to each other (month = 100%, others proportional)
-    const maxMonth = Math.max(usage.monthTokens, 1);
-    const dayPct = Math.min(100, (usage.todayTokens / maxMonth) * 100);
-    const weekPct = Math.min(100, (usage.weekTokens / maxMonth) * 100);
-    const monthPct = 100;
-    document.getElementById('usage-bar-day').style.width = dayPct + '%';
-    document.getElementById('usage-bar-week').style.width = weekPct + '%';
-    document.getElementById('usage-bar-month').style.width = monthPct + '%';
-
-    document.getElementById('usage-bar-day').style.background = '#64c8ff';
-    document.getElementById('usage-bar-week').style.background = '#b482ff';
-    document.getElementById('usage-bar-month').style.background = '#dfbd5e';
-
-    document.getElementById('usage-lbl-day').textContent = 'J: ' + fmtTok(usage.todayTokens);
-    document.getElementById('usage-lbl-week').textContent = 'S: ' + fmtTok(usage.weekTokens);
-    document.getElementById('usage-lbl-month').textContent = 'M: ' + fmtTok(usage.monthTokens);
   }
 
   // Level up effect
