@@ -878,14 +878,15 @@ function showOverlay(project, fac, charIconId) {
     }
   });
 
-  const p = encodeURIComponent(project);
-  const f = encodeURIComponent(fac);
-  const iconUrl = charIconId ? encodeURIComponent(`http://127.0.0.1:7777/icon/${charIconId}.png`) : '';
-  overlayWindow.loadFile('overlay.html', { query: { project: p, faction: f, charIcon: iconUrl } });
+  const iconUrl = charIconId ? `http://127.0.0.1:7777/icon/${charIconId}.png` : '';
+  overlayWindow.loadFile('overlay.html', { query: { project, faction: fac, charIcon: iconUrl } });
   overlayWindow.on('closed', () => { overlayWindow = null; });
 
   setTimeout(() => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close();
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+      overlayWindow = null;
+    }
   }, 12000);
 }
 

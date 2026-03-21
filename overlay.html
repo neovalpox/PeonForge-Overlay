@@ -159,9 +159,9 @@ body { display: flex; align-items: flex-start; justify-content: flex-end; paddin
 </div>
 <script>
 const params = new URLSearchParams(window.location.search);
-const project = decodeURIComponent(params.get('project') || 'Projet');
-const faction = decodeURIComponent(params.get('faction') || 'human');
-const charIcon = params.get('charIcon') ? decodeURIComponent(params.get('charIcon')) : '';
+const project = params.get('project') || 'Projet';
+const faction = params.get('faction') || 'human';
+const charIcon = params.get('charIcon') || '';
 
 // Portrait image — use character icon if available, fallback to GIF
 const portrait = document.getElementById('portrait');
