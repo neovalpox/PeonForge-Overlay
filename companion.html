@@ -332,7 +332,7 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
   flex-direction: column; gap: 4px;
   pointer-events: none;
 }
-.drop-overlay.visible { display: flex; }
+.drop-overlay.visible { display: flex; pointer-events: all; -webkit-app-region: no-drag; }
 .drop-overlay .drop-icon { font-size: 24px; filter: drop-shadow(0 0 8px rgba(223,189,94,0.6)); }
 .drop-overlay .drop-text { font: 600 11px 'Segoe UI', sans-serif; color: #dfbd5e; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
@@ -858,18 +858,18 @@ function showToast(text, duration = 2500) {
 }
 
 // ─── Drag & Drop Image ───
-const card = document.getElementById('card');
 const dropOverlay = document.getElementById('drop-overlay');
 let dragCounter = 0;
 
-card.addEventListener('dragenter', (e) => {
+// Use document-level events since card has -webkit-app-region: drag
+document.addEventListener('dragenter', (e) => {
   e.preventDefault();
   dragCounter++;
   if (e.dataTransfer.types.includes('Files')) {
     dropOverlay.classList.add('visible');
   }
 });
-card.addEventListener('dragleave', (e) => {
+document.addEventListener('dragleave', (e) => {
   e.preventDefault();
   dragCounter--;
   if (dragCounter <= 0) {
@@ -877,12 +877,14 @@ card.addEventListener('dragleave', (e) => {
     dropOverlay.classList.remove('visible');
   }
 });
-card.addEventListener('dragover', (e) => {
+document.addEventListener('dragover', (e) => {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
 });
-card.addEventListener('drop', async (e) => {
+// Drop handler on the overlay itself (which is no-drag when visible)
+dropOverlay.addEventListener('drop', async (e) => {
   e.preventDefault();
+  e.stopPropagation();
   dragCounter = 0;
   dropOverlay.classList.remove('visible');
   const files = e.dataTransfer.files;
@@ -894,8 +896,13 @@ card.addEventListener('drop', async (e) => {
       showToast('Image sauvee ! Chemin copie');
       setSpeech('Image capturee, sire !');
     }
-    break; // only first image
+    break;
   }
+});
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('visible');
 });
 
 // ─── Clipboard Paste ───

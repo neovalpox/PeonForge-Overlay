@@ -1856,11 +1856,19 @@ ipcMain.handle('companion:save-image', async (e, arrayBuffer, filename) => {
 });
 
 ipcMain.handle('companion:paste-image', async () => {
-  const img = nativeImage.createFromClipboard();
-  if (img.isEmpty()) return null;
-  const buffer = img.toPNG();
-  const filePath = saveImageToCaptures(buffer, 'clipboard.png');
-  return filePath;
+  console.log('[PeonForge] Paste image requested');
+  try {
+    const img = nativeImage.createFromClipboard();
+    console.log(`[PeonForge] Clipboard image: empty=${img.isEmpty()}, size=${img.getSize().width}x${img.getSize().height}`);
+    if (img.isEmpty()) return null;
+    const buffer = img.toPNG();
+    console.log(`[PeonForge] PNG buffer: ${buffer.length} bytes`);
+    const filePath = saveImageToCaptures(buffer, 'clipboard.png');
+    return filePath;
+  } catch (e) {
+    console.error('[PeonForge] Paste error:', e);
+    return null;
+  }
 });
 
 ipcMain.on('companion:focus-session', (e, sessionId) => {
