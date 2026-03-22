@@ -538,6 +538,9 @@ function syncToForge() {
     faction,
     username: forgeUsername || undefined,
     avatar: forgeAvatar || undefined,
+    tunnel_url: tunnelUrl || undefined,
+    lan_ip: getLanIP() || undefined,
+    port: 7777,
   });
 
   const url = new URL(forgeUrl + '/api/sync');
@@ -847,6 +850,7 @@ function getFullStateForMobile() {
     characters: getCharactersPayload(),
     username: forgeUsername,
     avatar: forgeAvatar,
+    forgeToken: forgeToken || null,
     achievements: forgeAchievements,
   });
 }
