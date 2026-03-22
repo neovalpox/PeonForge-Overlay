@@ -1428,21 +1428,9 @@ function startServer() {
           const streamHwnd = streamSession?.hwnd || 0;
           if (ws._streamInterval) clearInterval(ws._streamInterval);
 
-          // Resize terminal to phone proportions (portrait)
-          const phoneW = msg.phoneWidth || 1080;
-          const phoneH = msg.phoneHeight || 2400;
-          // Scale to exact phone aspect ratio, using PC screen height as reference
-          const display = screen.getPrimaryDisplay();
-          const pcH = display.workAreaSize.height;
-          // Use 90% of PC screen height, with exact phone aspect ratio
-          const targetH = Math.round(pcH * 0.9);
-          const targetW = Math.round(targetH * (phoneW / phoneH));
-          if (streamHwnd) {
-            exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${streamHwnd} -Width ${targetW} -Height ${targetH}`,
-              { timeout: 3000 });
-          }
+          // Don't resize terminal — capture as-is, mobile adapts with fit:contain
           ws._streamHwnd = streamHwnd;
-          console.log(`[PeonForge] Stream started hwnd=${streamHwnd} resize=${targetW}x${targetH}`);
+          console.log(`[PeonForge] Stream started hwnd=${streamHwnd} (no resize)`);
           const streamInterval = setInterval(() => {
             if (ws.readyState !== 1) { clearInterval(streamInterval); return; }
             const hwndArg = streamHwnd ? `-Hwnd ${streamHwnd}` : '';
@@ -1492,14 +1480,8 @@ function startServer() {
           if (ws._streamInterval) {
             clearInterval(ws._streamInterval);
             ws._streamInterval = null;
-            // Restore terminal window size
-            if (ws._streamHwnd) {
-              const resizeScript = path.join(__dirname, 'scripts', 'resize-terminal.ps1');
-              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${ws._streamHwnd} -Restore`,
-                { timeout: 3000 });
-              ws._streamHwnd = null;
-            }
-            console.log('[PeonForge] Terminal stream stopped + window restored');
+            ws._streamHwnd = null;
+            console.log('[PeonForge] Terminal stream stopped');
           }
         }
         if (msg.type === 'set-steps') {
@@ -1537,11 +1519,6 @@ function startServer() {
     }
     ws.on('close', () => {
       if (ws._streamInterval) clearInterval(ws._streamInterval);
-      // Restore terminal on disconnect
-      if (ws._streamHwnd) {
-        const resizeScript = path.join(__dirname, 'scripts', 'resize-terminal.ps1');
-        exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${ws._streamHwnd} -Restore`, { timeout: 3000 });
-      }
       mobileClients.delete(ws);
       console.log(`[PeonForge] Mobile disconnected (${mobileClients.size} clients)`);
     });
