@@ -1428,9 +1428,15 @@ function startServer() {
           const streamHwnd = streamSession?.hwnd || 0;
           if (ws._streamInterval) clearInterval(ws._streamInterval);
 
-          // Don't resize terminal — capture as-is, mobile adapts with fit:contain
+          // Resize terminal to narrow portrait format for mobile readability
+          // Fixed size that works well on phones: 600x900 (2:3 portrait)
+          const targetW = 600, targetH = 900;
+          if (streamHwnd) {
+            exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${streamHwnd} -Width ${targetW} -Height ${targetH}`,
+              { timeout: 3000 });
+          }
           ws._streamHwnd = streamHwnd;
-          console.log(`[PeonForge] Stream started hwnd=${streamHwnd} (no resize)`);
+          console.log(`[PeonForge] Stream started hwnd=${streamHwnd} resize=${targetW}x${targetH}`);
           const streamInterval = setInterval(() => {
             if (ws.readyState !== 1) { clearInterval(streamInterval); return; }
             const hwndArg = streamHwnd ? `-Hwnd ${streamHwnd}` : '';
@@ -1480,8 +1486,13 @@ function startServer() {
           if (ws._streamInterval) {
             clearInterval(ws._streamInterval);
             ws._streamInterval = null;
-            ws._streamHwnd = null;
-            console.log('[PeonForge] Terminal stream stopped');
+            if (ws._streamHwnd) {
+              const resizeScript = path.join(__dirname, 'scripts', 'resize-terminal.ps1');
+              exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${ws._streamHwnd} -Restore`,
+                { timeout: 3000 });
+              ws._streamHwnd = null;
+            }
+            console.log('[PeonForge] Terminal stream stopped + restored');
           }
         }
         if (msg.type === 'set-steps') {
@@ -1519,6 +1530,10 @@ function startServer() {
     }
     ws.on('close', () => {
       if (ws._streamInterval) clearInterval(ws._streamInterval);
+      if (ws._streamHwnd) {
+        const resizeScript = path.join(__dirname, 'scripts', 'resize-terminal.ps1');
+        exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${resizeScript}" -Hwnd ${ws._streamHwnd} -Restore`, { timeout: 3000 });
+      }
       mobileClients.delete(ws);
       console.log(`[PeonForge] Mobile disconnected (${mobileClients.size} clients)`);
     });
