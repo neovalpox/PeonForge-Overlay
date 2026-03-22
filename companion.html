@@ -319,14 +319,63 @@ body { display: flex; align-items: flex-end; justify-content: flex-end; padding:
 
 /* ─── Empty state ─── */
 .empty { text-align: center; padding: 10px; font: 11px 'Segoe UI', sans-serif; color: #3a3828; font-style: italic; }
+
+/* ─── Drop Zone Overlay ─── */
+.drop-overlay {
+  display: none;
+  position: absolute; inset: 0;
+  background: rgba(139,105,20,0.25);
+  border: 2px dashed #dfbd5e;
+  border-radius: 10px;
+  z-index: 100;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px;
+  pointer-events: none;
+}
+.drop-overlay.visible { display: flex; }
+.drop-overlay .drop-icon { font-size: 24px; filter: drop-shadow(0 0 8px rgba(223,189,94,0.6)); }
+.drop-overlay .drop-text { font: 600 11px 'Segoe UI', sans-serif; color: #dfbd5e; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+/* ─── Paste Button ─── */
+.paste-btn {
+  font-size: 10px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s;
+  padding: 1px 3px; border-radius: 3px; -webkit-app-region: no-drag;
+}
+.paste-btn:hover { opacity: 1; background: rgba(100,200,255,0.15); }
+
+/* ─── Toast Notification ─── */
+.toast {
+  display: none;
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(90,255,90,0.15);
+  border: 1px solid rgba(90,255,90,0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: 600 10px 'Segoe UI', sans-serif; color: #5aff5a;
+  white-space: nowrap;
+  z-index: 200;
+  animation: toastIn 0.3s ease;
+  pointer-events: none;
+}
+.toast.visible { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 </style>
 </head>
 <body>
 <div class="card" id="card">
+  <!-- Drop Zone Overlay -->
+  <div class="drop-overlay" id="drop-overlay">
+    <span class="drop-icon">&#x1F4F7;</span>
+    <span class="drop-text">Deposer l'image</span>
+  </div>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
   <!-- Drag Handle -->
   <div class="drag-handle">
     <span class="drag-title">PeonForge</span>
     <div style="display:flex;gap:4px;-webkit-app-region:no-drag">
+      <span class="paste-btn" id="paste-btn" title="Coller image du presse-papier" onclick="pasteImage()">&#x1F4CB;&#x1F4F7;</span>
       <span class="toggle-btn" id="toggle-sessions" title="Terminaux" onclick="toggleSection('sessions-bar','toggle-sessions')">&#x1F5A5;</span>
       <span class="toggle-btn" id="toggle-activity" title="Activite" onclick="toggleSection('activity-section','toggle-activity')">&#x1F4CB;</span>
     </div>
@@ -770,6 +819,12 @@ window.api?.onUpdate((data) => {
     }
   }
 
+  // Image saved from mobile
+  if (data.imageSaved) {
+    showToast('Image mobile sauvee ! Chemin copie');
+    setSpeech('Image recue du mobile !');
+  }
+
   // Initial activities (on window load)
   if (data.recentEvents && activities.length === 0) {
     data.recentEvents.forEach(e => {
@@ -790,6 +845,72 @@ function randomSpeech(key) {
   const lines = fd.speeches[key] || fd.speeches.idle;
   return lines[Math.floor(Math.random() * lines.length)];
 }
+
+// ─── Toast ───
+function showToast(text, duration = 2500) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.classList.add('visible');
+  toast.style.animation = 'none';
+  toast.offsetHeight;
+  toast.style.animation = '';
+  setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
+// ─── Drag & Drop Image ───
+const card = document.getElementById('card');
+const dropOverlay = document.getElementById('drop-overlay');
+let dragCounter = 0;
+
+card.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  if (e.dataTransfer.types.includes('Files')) {
+    dropOverlay.classList.add('visible');
+  }
+});
+card.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    dropOverlay.classList.remove('visible');
+  }
+});
+card.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+card.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('visible');
+  const files = e.dataTransfer.files;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await window.api?.saveDroppedImage(arrayBuffer, file.name);
+    if (result) {
+      showToast('Image sauvee ! Chemin copie');
+      setSpeech('Image capturee, sire !');
+    }
+    break; // only first image
+  }
+});
+
+// ─── Clipboard Paste ───
+async function pasteImage() {
+  const result = await window.api?.pasteClipboardImage();
+  if (result) {
+    showToast('Image collee ! Chemin copie');
+    setSpeech('Image capturee, sire !');
+  } else {
+    showToast('Pas d\'image dans le presse-papier');
+  }
+}
+
+// ─── Image saved from mobile ───
+// (handled in onUpdate: data.imageSaved)
 </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -57,6 +57,7 @@ const HISTORY_FILE = path.join(CONFIG_DIR, 'history.json');
 const TAMA_FILE = path.join(CONFIG_DIR, 'tamagotchi.json');
 const APP_JSON = path.join(CONFIG_DIR, 'app.json');
 const PEON_BIN = path.join(os.homedir(), '.local', 'bin', 'peon');
+const CAPTURES_DIR = path.join(CONFIG_DIR, 'captures');
 const CHARACTERS_FILE = path.join(__dirname, 'characters.json');
 const CHAR_ASSIGNMENTS_FILE = path.join(CONFIG_DIR, 'character-assignments.json');
 
@@ -1522,6 +1523,23 @@ function startServer() {
           broadcastToMobile(update);
           pushCompanionUpdate(update);
         }
+        if (msg.type === 'upload-image') {
+          try {
+            const base64 = msg.data;
+            const filename = msg.filename || 'mobile.jpg';
+            const buffer = Buffer.from(base64, 'base64');
+            const filePath = saveImageToCaptures(buffer, filename);
+            if (filePath) {
+              ws.send(JSON.stringify({ type: 'image-saved', path: filePath }));
+              // Also notify companion widget
+              pushCompanionUpdate({ imageSaved: filePath });
+            } else {
+              ws.send(JSON.stringify({ type: 'image-error', error: 'Failed to save' }));
+            }
+          } catch (e) {
+            ws.send(JSON.stringify({ type: 'image-error', error: e.message }));
+          }
+        }
       } catch {}
     });
     // Notify pairing window
@@ -1811,6 +1829,38 @@ ipcMain.on('pairing:close', () => {
 
 ipcMain.on('companion:close', () => {
   if (companionWindow && !companionWindow.isDestroyed()) companionWindow.close();
+});
+
+// ─── Image Capture (drag-drop, paste, mobile upload) ───
+function saveImageToCaptures(buffer, filename) {
+  try {
+    if (!fs.existsSync(CAPTURES_DIR)) fs.mkdirSync(CAPTURES_DIR, { recursive: true });
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const ext = path.extname(filename || '.png') || '.png';
+    const safeName = `capture-${ts}${ext}`;
+    const filePath = path.join(CAPTURES_DIR, safeName);
+    fs.writeFileSync(filePath, buffer);
+    clipboard.writeText(filePath);
+    console.log(`[PeonForge] Image saved: ${filePath}`);
+    return filePath;
+  } catch (e) {
+    console.error('[PeonForge] saveImageToCaptures error:', e);
+    return null;
+  }
+}
+
+ipcMain.handle('companion:save-image', async (e, arrayBuffer, filename) => {
+  const buffer = Buffer.from(arrayBuffer);
+  const filePath = saveImageToCaptures(buffer, filename);
+  return filePath;
+});
+
+ipcMain.handle('companion:paste-image', async () => {
+  const img = nativeImage.createFromClipboard();
+  if (img.isEmpty()) return null;
+  const buffer = img.toPNG();
+  const filePath = saveImageToCaptures(buffer, 'clipboard.png');
+  return filePath;
 });
 
 ipcMain.on('companion:focus-session', (e, sessionId) => {
