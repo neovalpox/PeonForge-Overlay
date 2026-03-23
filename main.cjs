@@ -592,6 +592,41 @@ function startForgeSync() {
   setInterval(() => { if (forgeToken) syncToForge(); }, 5 * 60 * 1000);
 }
 
+// ─── Auto Update ─────────────────────────────────
+function startAutoUpdate() {
+  // Check for updates every 30 min
+  checkForUpdate();
+  setInterval(checkForUpdate, 30 * 60 * 1000);
+}
+
+function checkForUpdate() {
+  if (!fs.existsSync(path.join(__dirname, '.git'))) return; // not a git repo
+  exec('git -C "' + __dirname + '" fetch origin main --quiet', { timeout: 15000 }, (err) => {
+    if (err) return;
+    exec('git -C "' + __dirname + '" rev-parse HEAD', { timeout: 5000 }, (err, localHash) => {
+      if (err) return;
+      exec('git -C "' + __dirname + '" rev-parse origin/main', { timeout: 5000 }, (err, remoteHash) => {
+        if (err) return;
+        if (localHash.trim() !== remoteHash.trim()) {
+          console.log('[PeonForge] Update available! Pulling...');
+          exec('git -C "' + __dirname + '" pull origin main --quiet', { timeout: 30000 }, (err) => {
+            if (err) { console.log('[PeonForge] Pull failed:', err.message); return; }
+            console.log('[PeonForge] Updated! Restarting...');
+            // Notify mobile
+            pushCompanionUpdate({ toast: 'Mise a jour installee, redemarrage...' });
+            broadcastToMobile({ type: 'update', message: 'PeonForge mis a jour' });
+            // Restart app
+            setTimeout(() => {
+              app.relaunch();
+              app.exit(0);
+            }, 2000);
+          });
+        }
+      });
+    });
+  });
+}
+
 // ─── Tray Icon ────────────────────────────────────
 function createTrayIcon() {
   const size = 32;
@@ -1939,6 +1974,7 @@ app.whenReady().then(() => {
   if (showCompanionWidget) showCompanion();
   startMoodTimer();
   startForgeSync();
+  startAutoUpdate();
   // Scan for existing Claude terminals that started before us
   scanClaudeTerminals();
   setInterval(scanClaudeTerminals, 30000);
