@@ -7,6 +7,22 @@ function OK($t) { Write-Host "        OK " -Fo Green -No; Write-Host $t -Fo Gray
 function WR($t) { Write-Host "        !! " -Fo Yellow -No; Write-Host $t -Fo Gray }
 function FL($t) { Write-Host "        XX " -Fo Red -No; Write-Host $t -Fo Gray }
 function ASK($p) { Write-Host "        $p" -Fo White -No; return [Console]::ReadLine() }
+function ASKPWD($p) {
+    Write-Host "        $p" -Fo White -No
+    $pwd = ""
+    while ($true) {
+        $key = [Console]::ReadKey($true)
+        if ($key.Key -eq "Enter") { Write-Host ""; return $pwd }
+        if ($key.Key -eq "Backspace") { if ($pwd.Length -gt 0) { $pwd = $pwd.Substring(0, $pwd.Length-1); Write-Host "`b `b" -No } }
+        else { $pwd += $key.KeyChar; Write-Host "*" -No }
+    }
+}
+function ASKDEF($p, $def) {
+    Write-Host "        $p" -Fo White -No; Write-Host " [$def] " -Fo DarkGray -No
+    $v = [Console]::ReadLine()
+    if ([string]::IsNullOrWhiteSpace($v)) { return $def }
+    return $v
+}
 
 cls; Write-Host ""
 Write-Host "    ======================================================" -Fo DarkYellow
@@ -44,9 +60,9 @@ else { if (Test-Path $dir) { Remove-Item $dir -Recurse -Force 2>$null }
     if (Test-Path "$dir\package.json") { OK "Telecharge" } else { FL "Echec du clonage"; exit 1 }
 }
 
-# 4. npm install
+# 4. npm install (ignore casclib build errors)
 S 4 $T "Installation des dependances..."
-Push-Location $dir; & npm.cmd install --silent 2>$null; Pop-Location; OK "Pret"
+Push-Location $dir; & npm.cmd install --ignore-scripts 2>$null; Pop-Location; OK "Pret"
 
 # 5. cloudflared
 S 5 $T "Cloudflared..."
@@ -76,7 +92,8 @@ Write-Host "        Choisis ton camp :" -Fo White
 Write-Host "          [1] Alliance - Paysan" -Fo Cyan
 Write-Host "          [2] Horde    - Peon" -Fo Red
 Write-Host ""
-$fc = ""; while ($fc -ne "1" -and $fc -ne "2") { $fc = ASK "Ton choix - 1 ou 2 : " }
+$fc = ASKDEF "Ton choix" "1"
+if ($fc -ne "2") { $fc = "1" }
 $side = if ($fc -eq "1") {"alliance"} else {"horde"}
 $faction = if ($side -eq "alliance") {"human"} else {"orc"}
 $avatar = if ($side -eq "alliance") {"peasant_fr"} else {"peon_fr"}
@@ -86,8 +103,9 @@ Write-Host ""
 
 # Username
 $un = ""; $et = $null; $needsPassword = $false
+$defaultName = $env:USERNAME
 while ($true) {
-    $un = ASK "Pseudo : "
+    $un = ASKDEF "Pseudo" $defaultName
     if ($un.Length -lt 2 -or $un.Length -gt 20) { WR "Entre 2 et 20 caracteres"; continue }
     try {
         $resp = Invoke-RestMethod "https://peonforge.ch/api/player/$([uri]::EscapeDataString($un))" -EA Stop -TimeoutSec 5
@@ -97,9 +115,9 @@ while ($true) {
             if ($hp) {
                 Write-Host "          [1] C'est moi, connexion" -Fo Cyan
                 Write-Host "          [2] Autre pseudo" -Fo DarkGray
-                $ch = ASK "Choix - 1 ou 2 : "
-                if ($ch -eq "1") {
-                    $pw = ASK "Mot de passe : "
+                $ch = ASKDEF "Choix" "1"
+                if ($ch -ne "2") {
+                    $pw = ASKPWD "Mot de passe : "
                     try { $lr = Invoke-RestMethod "https://peonforge.ch/api/login" -Method Post -Body (@{username=$un;password=$pw}|ConvertTo-Json) -ContentType "application/json" -EA Stop -TimeoutSec 5
                         if ($lr.token) { $et = $lr.token; OK "Bienvenue $un !"; break }
                     } catch { FL "Mot de passe incorrect"; continue }
@@ -108,8 +126,8 @@ while ($true) {
                 Write-Host "          Ce compte n'a pas de mot de passe." -Fo DarkGray
                 Write-Host "          [1] C'est moi, definir un mdp" -Fo Cyan
                 Write-Host "          [2] Autre pseudo" -Fo DarkGray
-                $ch = ASK "Choix - 1 ou 2 : "
-                if ($ch -eq "1") {
+                $ch = ASKDEF "Choix" "1"
+                if ($ch -ne "2") {
                     $ef = Join-Path (Join-Path $env:USERPROFILE ".peonping-overlay") "forge.json"
                     if (Test-Path $ef) { try { $fd = Get-Content $ef -Raw | ConvertFrom-Json; if ($fd.username -eq $un -and $fd.token) { $et = $fd.token; $needsPassword = $true; OK "Compte recupere"; break } } catch {} }
                     WR "Definis ton mdp apres installation"; break
@@ -124,8 +142,14 @@ OK "Pseudo : $un"
 # Password
 $pw2 = ""
 if (-not $et -or $needsPassword) {
-    Write-Host ""; $pw2 = ASK "Mot de passe - min 4 car. : "
-    while ($pw2.Length -lt 4) { WR "Minimum 4 caracteres"; $pw2 = ASK "Mot de passe : " }
+    Write-Host ""
+    while ($true) {
+        $pw2 = ASKPWD "Mot de passe - min 4 car. : "
+        if ($pw2.Length -lt 4) { WR "Minimum 4 caracteres"; continue }
+        $pw2c = ASKPWD "Confirmer le mot de passe : "
+        if ($pw2 -ne $pw2c) { WR "Les mots de passe ne correspondent pas"; continue }
+        break
+    }
     OK "Mot de passe OK"
 }
 
@@ -146,12 +170,21 @@ if ($et) {
     } catch { WR "Inscription echouee" }
 }
 
-# 9. Raccourci
+# 9. Raccourci + lancement
 Write-Host "    ------" -Fo DarkGray
-S 9 $T "Raccourci de demarrage..."
-$sd = [IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup")
+S 9 $T "Raccourci et lancement..."
+
+# Find electron
 $ep = Join-Path $dir "node_modules\electron\dist\electron.exe"
-if (-not (Test-Path $ep)) { $ep = Join-Path $dir "node_modules\.bin\electron.cmd" }
+if (-not (Test-Path $ep)) {
+    # Electron might not be installed due to --ignore-scripts, install it explicitly
+    Write-Host "        Installation de Electron..." -Fo DarkGray
+    Push-Location $dir; & npm.cmd install electron --silent 2>$null; Pop-Location
+    $ep = Join-Path $dir "node_modules\electron\dist\electron.exe"
+}
+
+# Startup shortcut
+$sd = [IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup")
 try {
     $sh = New-Object -ComObject WScript.Shell
     $lnk = $sh.CreateShortcut("$sd\PeonForge.lnk")
@@ -174,15 +207,14 @@ Write-Host "    =   peonforge.ch                                     =" -Fo Dark
 Write-Host "    =                                                    =" -Fo Green
 Write-Host "    ======================================================" -Fo Green
 Write-Host ""
-Write-Host "    Lancement de PeonForge..." -Fo Cyan
 
 # Launch
-$ep2 = Join-Path $dir "node_modules\electron\dist\electron.exe"
-$ec = Join-Path $dir "node_modules\.bin\electron.cmd"
-if (Test-Path $ep2) { Start-Process $ep2 "`"$dir`"" -WorkingDirectory $dir }
-elseif (Test-Path $ec) { Start-Process cmd.exe "/c cd /d `"$dir`" && `"$ec`" ." -WindowStyle Hidden }
-else { Start-Process cmd.exe "/c cd /d `"$dir`" && npx.cmd electron ." -WindowStyle Hidden }
-
-Start-Sleep 3
-Write-Host "    PeonForge est dans le system tray !" -Fo Green
+Write-Host "    Lancement de PeonForge..." -Fo Cyan
+if (Test-Path $ep) {
+    Start-Process -FilePath $ep -ArgumentList "`"$dir`"" -WorkingDirectory $dir
+    Start-Sleep 3
+    Write-Host "    PeonForge est dans le system tray !" -Fo Green
+} else {
+    WR "electron.exe non trouve - lance manuellement : cd $dir; npm start"
+}
 Write-Host ""
