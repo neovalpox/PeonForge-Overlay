@@ -163,6 +163,7 @@ Write-Host ""
 
 # Username
 $username = ""
+$existingToken = $null
 while ($true) {
     Write-Host "        Choisis ton pseudo (2-20 caracteres): " -ForegroundColor White -NoNewline
     $username = [Console]::ReadLine()
@@ -170,16 +171,38 @@ while ($true) {
         Write-Warn "Le pseudo doit faire entre 2 et 20 caracteres"
         continue
     }
-    # Check if username is available on peonforge.ch
+    # Check if username exists on peonforge.ch
     try {
         $checkUrl = "https://peonforge.ch/api/player/$([uri]::EscapeDataString($username))"
         $response = Invoke-RestMethod -Uri $checkUrl -Method Get -ErrorAction Stop -TimeoutSec 5
         if ($response.username) {
-            Write-Warn "Le pseudo '$username' est deja pris ! Choisis-en un autre."
-            continue
+            Write-Host ""
+            Write-Host "        Le pseudo '$username' existe deja sur peonforge.ch !" -ForegroundColor Yellow
+            Write-Host "        [1] C'est moi, je veux recuperer mon compte" -ForegroundColor Cyan
+            Write-Host "        [2] Choisir un autre pseudo" -ForegroundColor DarkGray
+            Write-Host ""
+            Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
+            $recoverChoice = [Console]::ReadLine()
+            if ($recoverChoice -eq "1") {
+                # Check if forge.json already has this token (reinstall on same PC)
+                $existingForge = Join-Path (Join-Path $env:USERPROFILE ".peonping-overlay") "forge.json"
+                if (Test-Path $existingForge) {
+                    try {
+                        $forgeData = Get-Content $existingForge -Raw | ConvertFrom-Json
+                        if ($forgeData.username -eq $username -and $forgeData.token) {
+                            $existingToken = $forgeData.token
+                            Write-OK "Compte recupere depuis la config locale"
+                            break
+                        }
+                    } catch {}
+                }
+                Write-OK "Compte existant — la config sera creee au premier lancement"
+                break
+            } else {
+                continue
+            }
         }
     } catch {
-        # 404 = not found = available, or network error = proceed
         $statusCode = $_.Exception.Response.StatusCode.value__
         if ($statusCode -and $statusCode -ne 404) {
             Write-Warn "Impossible de verifier le pseudo (erreur reseau). On continue."
@@ -206,23 +229,34 @@ $configData = @{
 Set-Content $configFile -Value $configData -Encoding UTF8
 Write-OK "Configuration sauvee"
 
-# Register on peonforge.ch
-try {
-    $regBody = @{ username = $username; faction = $faction } | ConvertTo-Json
-    $regResponse = Invoke-RestMethod -Uri "https://peonforge.ch/api/register" -Method Post -Body $regBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
-    if ($regResponse.token) {
-        $forgeFile = Join-Path $configDir "forge.json"
-        $forgeData = @{
-            token = $regResponse.token
-            url = "https://peonforge.ch"
-            username = $username
-            avatar = $avatar
-        } | ConvertTo-Json
-        Set-Content $forgeFile -Value $forgeData -Encoding UTF8
-        Write-OK "Inscrit sur peonforge.ch comme '$username'"
+# Register on peonforge.ch (skip if existing account recovered)
+$forgeFile = Join-Path $configDir "forge.json"
+if ($existingToken) {
+    $forgeData = @{
+        token = $existingToken
+        url = "https://peonforge.ch"
+        username = $username
+        avatar = $avatar
+    } | ConvertTo-Json
+    Set-Content $forgeFile -Value $forgeData -Encoding UTF8
+    Write-OK "Compte existant restaure"
+} else {
+    try {
+        $regBody = @{ username = $username; faction = $faction } | ConvertTo-Json
+        $regResponse = Invoke-RestMethod -Uri "https://peonforge.ch/api/register" -Method Post -Body $regBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
+        if ($regResponse.token) {
+            $forgeData = @{
+                token = $regResponse.token
+                url = "https://peonforge.ch"
+                username = $username
+                avatar = $avatar
+            } | ConvertTo-Json
+            Set-Content $forgeFile -Value $forgeData -Encoding UTF8
+            Write-OK "Inscrit sur peonforge.ch comme '$username'"
+        }
+    } catch {
+        Write-Warn "Inscription sur peonforge.ch echouee (sera fait au prochain lancement)"
     }
-} catch {
-    Write-Warn "Inscription sur peonforge.ch echouee (pas grave, sera fait au prochain lancement)"
 }
 
 Write-Host ""
@@ -268,14 +302,19 @@ Write-Host "  Lancement de PeonForge..." -ForegroundColor Cyan
 Write-Host ""
 
 # Launch PeonForge
-Push-Location $installDir
-# Launch Electron directly
 $electronPath = Join-Path $installDir "node_modules\electron\dist\electron.exe"
+$electronCmd = Join-Path $installDir "node_modules\.bin\electron.cmd"
+Write-Host "  Recherche de Electron..." -ForegroundColor DarkGray
+
 if (Test-Path $electronPath) {
-    Start-Process -FilePath $electronPath -ArgumentList "`"$installDir`"" -WindowStyle Hidden
+    Write-Host "  Lancement via electron.exe..." -ForegroundColor DarkGray
+    Start-Process -FilePath $electronPath -ArgumentList "`"$installDir`"" -WorkingDirectory $installDir
+} elseif (Test-Path $electronCmd) {
+    Write-Host "  Lancement via electron.cmd..." -ForegroundColor DarkGray
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$installDir`" && `"$electronCmd`" ." -WindowStyle Hidden
 } else {
-    # Fallback: npm.cmd start
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$installDir`" && npm.cmd start" -WindowStyle Hidden
+    Write-Host "  Lancement via npx..." -ForegroundColor DarkGray
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$installDir`" && npx.cmd electron ." -WindowStyle Hidden
 }
 Pop-Location
 
