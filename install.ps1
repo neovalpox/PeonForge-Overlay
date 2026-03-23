@@ -231,22 +231,21 @@ Write-Host ""
 # Launch as fully detached process (survives PowerShell close)
 Write-Host "    Lancement de PeonForge..." -Fo Cyan
 if (Test-Path $ep) {
-    # Create a temp VBS script to launch electron completely detached
-    $vbs = Join-Path $env:TEMP "peonforge_launch.vbs"
-    $vbsContent = "CreateObject(`"WScript.Shell`").Run `"`"`"$ep`"`" `"`"`"$dir`"`"`"`", 0, False"
-    Set-Content $vbs $vbsContent -Encoding ASCII
-    & wscript.exe $vbs
-    Start-Sleep 4
-    # Verify it's running
+    # Write a .bat that launches electron, then use explorer.exe to run it detached
+    $bat = Join-Path $env:TEMP "peonforge_launch.bat"
+    "@echo off" | Set-Content $bat -Encoding ASCII
+    "start `"`" `"$ep`" `"$dir`"" | Add-Content $bat -Encoding ASCII
+    & explorer.exe $bat
+    Start-Sleep 5
     $running = Get-Process -Name "electron" -EA 0
     if ($running) {
         Write-Host "    PeonForge est dans le system tray !" -Fo Green
     } else {
-        WR "Electron ne semble pas tourne. Double-clique le raccourci PeonForge sur le bureau."
+        WR "Lance PeonForge avec le raccourci sur le bureau."
     }
-    Remove-Item $vbs -EA 0
+    Remove-Item $bat -EA 0
 } else {
     WR "electron.exe non trouve"
-    WR "Double-clique le raccourci PeonForge sur le bureau pour lancer."
+    WR "Lance PeonForge avec le raccourci sur le bureau."
 }
 Write-Host ""
