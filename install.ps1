@@ -1,101 +1,82 @@
 #Requires -Version 5.1
-<# PeonForge Installer — https://peonforge.ch
-   Usage: iwr peonforge.ch/install.ps1 -Out i.ps1; .\i.ps1
-#>
+# PeonForge Installer
 $ErrorActionPreference = "SilentlyContinue"
-$g = "DarkYellow"; $d = "DarkGray"; $c = "Cyan"; $w = "White"; $r = "Red"; $gr = "Green"
 
-function B { # Banner
-    cls
-    Write-Host ""
-    Write-Host "    ╔══════════════════════════════════════════════════╗" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "   ____                    _____                  " -Fo $c -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "  |  _ \ ___  ___  _ __   |  ___|__  _ __ __ _  __" -Fo $c -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "  | |_) / _ \/ _ \| '_ \  | |_ / _ \| '__/ _  |/ _\" -Fo $c -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "  |  __/  __/ (_) | | | | |  _| (_) | | | (_| |  _/" -Fo $c -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "  |_|   \___|\___/|_| |_| |_|  \___/|_|  \__, |\___|" -Fo $c -No; Write-Host "" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "                                          |___/    " -Fo $c -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "       Ton compagnon Warcraft pour Claude Code     " -Fo $d -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "       100% gratuit  ·  100% inutile  ·  Work work" -Fo $d -No; Write-Host "║" -Fo $g
-    Write-Host "    ║" -Fo $g -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $g
-    Write-Host "    ╚══════════════════════════════════════════════════╝" -Fo $g
-    Write-Host ""
-}
+function S($n,$t,$txt) { Write-Host "    [" -Fo Cyan -No; Write-Host "$n/$t" -Fo White -No; Write-Host "] " -Fo Cyan -No; Write-Host $txt -Fo White }
+function OK($t) { Write-Host "        OK " -Fo Green -No; Write-Host $t -Fo Gray }
+function WR($t) { Write-Host "        !! " -Fo Yellow -No; Write-Host $t -Fo Gray }
+function FL($t) { Write-Host "        XX " -Fo Red -No; Write-Host $t -Fo Gray }
+function ASK($p) { Write-Host "        $p" -Fo White -No; return [Console]::ReadLine() }
 
-function S($n,$t,$txt) { Write-Host "    ⚒ " -Fo $g -No; Write-Host "[$n/$t] " -Fo $c -No; Write-Host $txt -Fo $w }
-function OK($t) { Write-Host "       ✓ " -Fo $gr -No; Write-Host $t -Fo Gray }
-function WR($t) { Write-Host "       ⚠ " -Fo Yellow -No; Write-Host $t -Fo Gray }
-function FL($t) { Write-Host "       ✗ " -Fo $r -No; Write-Host $t -Fo Gray }
-function LN { Write-Host "    ──────────────────────────────────────────────" -Fo $d }
-function ASK($prompt) { Write-Host "       $prompt" -Fo $w -No; return [Console]::ReadLine() }
+cls; Write-Host ""
+Write-Host "    ======================================================" -Fo DarkYellow
+Write-Host "    =                                                    =" -Fo DarkYellow
+Write-Host "    =   PEON FORGE                                      =" -Fo DarkYellow
+Write-Host "    =   Ton compagnon Warcraft pour Claude Code          =" -Fo DarkYellow
+Write-Host "    =   100% gratuit - 100% inutile - Work, work.       =" -Fo DarkYellow
+Write-Host "    =                                                    =" -Fo DarkYellow
+Write-Host "    ======================================================" -Fo DarkYellow
+Write-Host ""
 
-B
 $T = 9; $dir = Join-Path $env:USERPROFILE "PeonForge"
 
-# ═══ 1. Git ═══
+# 1. Git
 S 1 $T "Verification de Git..."
-$x = Get-Command git -EA 0
-if ($x) { OK "Git $(& git --version 2>&1)" }
+if (Get-Command git -EA 0) { OK "Git OK" }
 else { WR "Installation de Git..."; winget install Git.Git --accept-package-agreements --accept-source-agreements 2>$null
     $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
-    if (Get-Command git -EA 0) { OK "Git installe" } else { FL "https://git-scm.com"; exit 1 }
+    if (Get-Command git -EA 0) { OK "Git installe" } else { FL "Installe Git: https://git-scm.com"; exit 1 }
 }
 
-# ═══ 2. Node ═══
+# 2. Node
 S 2 $T "Verification de Node.js..."
-$x = Get-Command node -EA 0
-if ($x) { OK "Node.js $(& node --version 2>&1)" }
+if (Get-Command node -EA 0) { OK "Node.js OK" }
 else { WR "Installation de Node.js..."; winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements 2>$null
     $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
-    if (Get-Command node -EA 0) { OK "Node.js installe" } else { FL "https://nodejs.org"; exit 1 }
+    if (Get-Command node -EA 0) { OK "Node.js installe" } else { FL "Installe Node.js: https://nodejs.org"; exit 1 }
 }
 
-# ═══ 3. Clone ═══
+# 3. Clone
 S 3 $T "Telechargement de PeonForge..."
 if (Test-Path "$dir\.git") { Push-Location $dir; & git pull -q 2>$null; Pop-Location; OK "Mis a jour" }
 else { if (Test-Path $dir) { Remove-Item $dir -Recurse -Force 2>$null }
     & git clone -q https://github.com/neovalpox/PeonForge-Overlay.git $dir 2>$null
-    if (Test-Path "$dir\package.json") { OK "Telecharge dans $dir" } else { FL "Echec du clonage"; exit 1 }
+    if (Test-Path "$dir\package.json") { OK "Telecharge" } else { FL "Echec du clonage"; exit 1 }
 }
 
-# ═══ 4. npm install ═══
+# 4. npm install
 S 4 $T "Installation des dependances..."
 Push-Location $dir; & npm.cmd install --silent 2>$null; Pop-Location; OK "Pret"
 
-# ═══ 5. cloudflared ═══
-S 5 $T "Cloudflared (acces mobile distant)..."
+# 5. cloudflared
+S 5 $T "Cloudflared..."
 if (Get-Command cloudflared -EA 0) { OK "Deja installe" }
 else { WR "Installation..."; winget install Cloudflare.cloudflared --accept-package-agreements --accept-source-agreements 2>$null
-    if (Get-Command cloudflared -EA 0) { OK "Installe" } else { WR "Optionnel — installe manuellement" }
+    if (Get-Command cloudflared -EA 0) { OK "Installe" } else { WR "Optionnel" }
 }
 
-# ═══ 6. ffplay ═══
-S 6 $T "FFplay (controle du volume)..."
+# 6. ffplay
+S 6 $T "FFplay..."
 if (Get-Command ffplay -EA 0) { OK "Deja installe" }
 else { WR "Installation..."; winget install Gyan.FFmpeg --accept-package-agreements --accept-source-agreements 2>$null
-    if (Get-Command ffplay -EA 0) { OK "Installe" } else { WR "Optionnel — sons sans volume" }
+    if (Get-Command ffplay -EA 0) { OK "Installe" } else { WR "Optionnel" }
 }
 
-# ═══ 7. Hooks ═══
+# 7. Hooks
 S 7 $T "Hooks Claude Code..."
 $hs = Join-Path $dir "scripts\install-hooks.ps1"
 if (Test-Path $hs) { & powershell -NoProfile -ExecutionPolicy Bypass -File $hs 2>$null; OK "Hooks actifs" }
 else { WR "Hooks non trouves" }
 
-# ═══ 8. Profil ═══
-LN
-S 8 $T "Configuration de ton profil"
+# 8. Profil
+Write-Host "    ------" -Fo DarkGray
+S 8 $T "Configuration du profil"
 Write-Host ""
-
-# Faction
-Write-Host "       Choisis ton camp :" -Fo $w
+Write-Host "        Choisis ton camp :" -Fo White
+Write-Host "          [1] Alliance - Paysan" -Fo Cyan
+Write-Host "          [2] Horde    - Peon" -Fo Red
 Write-Host ""
-Write-Host "         " -No; Write-Host "[1]" -Fo $c -No; Write-Host " ⚔ Alliance " -Fo $c -No; Write-Host "(Paysan)" -Fo $d
-Write-Host "         " -No; Write-Host "[2]" -Fo $r -No; Write-Host " ☠ Horde    " -Fo $r -No; Write-Host "(Peon)" -Fo $d
-Write-Host ""
-$fc = ""; while ($fc -ne "1" -and $fc -ne "2") { $fc = ASK "Ton choix (1/2): " }
+$fc = ""; while ($fc -ne "1" -and $fc -ne "2") { $fc = ASK "Ton choix - 1 ou 2 : " }
 $side = if ($fc -eq "1") {"alliance"} else {"horde"}
 $faction = if ($side -eq "alliance") {"human"} else {"orc"}
 $avatar = if ($side -eq "alliance") {"peasant_fr"} else {"peon_fr"}
@@ -104,46 +85,47 @@ OK "$sl selectionne"
 Write-Host ""
 
 # Username
-$un = ""; $et = $null
+$un = ""; $et = $null; $needsPassword = $false
 while ($true) {
-    $un = ASK "Pseudo (2-20 car.): "
+    $un = ASK "Pseudo : "
     if ($un.Length -lt 2 -or $un.Length -gt 20) { WR "Entre 2 et 20 caracteres"; continue }
     try {
         $resp = Invoke-RestMethod "https://peonforge.ch/api/player/$([uri]::EscapeDataString($un))" -EA Stop -TimeoutSec 5
         if ($resp.username) {
             $hp = $true; try { $hp = (Invoke-RestMethod "https://peonforge.ch/api/player/$([uri]::EscapeDataString($un))/has-password" -EA Stop -TimeoutSec 5).has_password -eq $true } catch {}
-            Write-Host ""; WR "Le pseudo '$un' existe deja !"
+            WR "Le pseudo '$un' existe deja !"
             if ($hp) {
-                Write-Host "         [1] C'est moi — connexion" -Fo $c; Write-Host "         [2] Autre pseudo" -Fo $d; Write-Host ""
-                $ch = ASK "Choix (1/2): "
+                Write-Host "          [1] C'est moi, connexion" -Fo Cyan
+                Write-Host "          [2] Autre pseudo" -Fo DarkGray
+                $ch = ASK "Choix - 1 ou 2 : "
                 if ($ch -eq "1") {
-                    $pw = ASK "Mot de passe: "
+                    $pw = ASK "Mot de passe : "
                     try { $lr = Invoke-RestMethod "https://peonforge.ch/api/login" -Method Post -Body (@{username=$un;password=$pw}|ConvertTo-Json) -ContentType "application/json" -EA Stop -TimeoutSec 5
                         if ($lr.token) { $et = $lr.token; OK "Bienvenue $un !"; break }
                     } catch { FL "Mot de passe incorrect"; continue }
                 } else { continue }
             } else {
-                Write-Host "         Ce compte n'a pas de mot de passe." -Fo $d
-                Write-Host "         [1] C'est moi — definir un mdp" -Fo $c; Write-Host "         [2] Autre pseudo" -Fo $d; Write-Host ""
-                $ch = ASK "Choix (1/2): "
+                Write-Host "          Ce compte n'a pas de mot de passe." -Fo DarkGray
+                Write-Host "          [1] C'est moi, definir un mdp" -Fo Cyan
+                Write-Host "          [2] Autre pseudo" -Fo DarkGray
+                $ch = ASK "Choix - 1 ou 2 : "
                 if ($ch -eq "1") {
                     $ef = Join-Path (Join-Path $env:USERPROFILE ".peonping-overlay") "forge.json"
                     if (Test-Path $ef) { try { $fd = Get-Content $ef -Raw | ConvertFrom-Json; if ($fd.username -eq $un -and $fd.token) { $et = $fd.token; $needsPassword = $true; OK "Compte recupere"; break } } catch {} }
-                    WR "Definis ton mot de passe apres installation"; break
+                    WR "Definis ton mdp apres installation"; break
                 } else { continue }
             }
         }
-    } catch { $sc = $_.Exception.Response.StatusCode.value__; if ($sc -and $sc -ne 404) { WR "Erreur reseau" } }
+    } catch { $sc2 = $_.Exception.Response.StatusCode.value__; if ($sc2 -and $sc2 -ne 404) { WR "Erreur reseau" } }
     break
 }
-OK "Pseudo: $un"
+OK "Pseudo : $un"
 
 # Password
-$pw = ""
-$needsPassword = if ($needsPassword) {$true} else {$false}
+$pw2 = ""
 if (-not $et -or $needsPassword) {
-    Write-Host ""; $pw = ASK "Mot de passe (min 4 car.): "
-    while ($pw.Length -lt 4) { WR "Minimum 4 caracteres"; $pw = ASK "Mot de passe: " }
+    Write-Host ""; $pw2 = ASK "Mot de passe - min 4 car. : "
+    while ($pw2.Length -lt 4) { WR "Minimum 4 caracteres"; $pw2 = ASK "Mot de passe : " }
     OK "Mot de passe OK"
 }
 
@@ -157,50 +139,50 @@ $ff = Join-Path $cd "forge.json"
 if ($et) {
     @{token=$et;url="https://peonforge.ch";username=$un;avatar=$avatar} | ConvertTo-Json | Set-Content $ff -Encoding UTF8
     OK "Compte restaure"
-    if ($pw.Length -ge 4) { try { Invoke-RestMethod "https://peonforge.ch/api/set-password" -Method Post -Body (@{password=$pw}|ConvertTo-Json) -ContentType "application/json" -Headers @{Authorization="Bearer $et"} -EA Stop -TimeoutSec 5 | Out-Null; OK "Mot de passe defini" } catch { WR "Erreur mdp" } }
+    if ($pw2.Length -ge 4) { try { Invoke-RestMethod "https://peonforge.ch/api/set-password" -Method Post -Body (@{password=$pw2}|ConvertTo-Json) -ContentType "application/json" -Headers @{Authorization="Bearer $et"} -EA Stop -TimeoutSec 5 | Out-Null; OK "Mot de passe defini" } catch { WR "Erreur mdp" } }
 } else {
-    try { $rr = Invoke-RestMethod "https://peonforge.ch/api/register" -Method Post -Body (@{username=$un;faction=$faction;password=$pw}|ConvertTo-Json) -ContentType "application/json" -EA Stop -TimeoutSec 5
+    try { $rr = Invoke-RestMethod "https://peonforge.ch/api/register" -Method Post -Body (@{username=$un;faction=$faction;password=$pw2}|ConvertTo-Json) -ContentType "application/json" -EA Stop -TimeoutSec 5
         if ($rr.token) { @{token=$rr.token;url="https://peonforge.ch";username=$un;avatar=$avatar} | ConvertTo-Json | Set-Content $ff -Encoding UTF8; OK "Inscrit sur peonforge.ch" }
-    } catch { WR "Inscription echouee (sera fait au lancement)" }
+    } catch { WR "Inscription echouee" }
 }
 
-# ═══ 9. Raccourci ═══
-LN
-S 9 $T "Raccourci de demarrage automatique..."
+# 9. Raccourci
+Write-Host "    ------" -Fo DarkGray
+S 9 $T "Raccourci de demarrage..."
 $sd = [IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup")
 $ep = Join-Path $dir "node_modules\electron\dist\electron.exe"
 if (-not (Test-Path $ep)) { $ep = Join-Path $dir "node_modules\.bin\electron.cmd" }
 try {
     $sh = New-Object -ComObject WScript.Shell
-    $sc = $sh.CreateShortcut("$sd\PeonForge.lnk")
-    $sc.TargetPath = $ep; $sc.Arguments = "`"$dir`""; $sc.WorkingDirectory = $dir; $sc.WindowStyle = 7
-    $sc.Description = "PeonForge"; $ip = Join-Path $dir "app-icon.ico"
-    if (Test-Path $ip) { $sc.IconLocation = $ip }; $sc.Save()
-    OK "PeonForge se lancera au demarrage"
+    $lnk = $sh.CreateShortcut("$sd\PeonForge.lnk")
+    $lnk.TargetPath = $ep; $lnk.Arguments = "`"$dir`""; $lnk.WorkingDirectory = $dir; $lnk.WindowStyle = 7
+    $lnk.Description = "PeonForge"; $ip = Join-Path $dir "app-icon.ico"
+    if (Test-Path $ip) { $lnk.IconLocation = $ip }; $lnk.Save()
+    OK "Demarrage automatique actif"
 } catch { WR "Raccourci echoue" }
 
-# ═══ DONE ═══
+# Done
 Write-Host ""
-Write-Host "    ╔══════════════════════════════════════════════════╗" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "        ✓  Installation terminee !                 " -Fo $gr -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "        $un — $sl" -Fo $c -No
-    $pad = 50 - 8 - $un.Length - 3 - $sl.Length; Write-Host (" " * [Math]::Max(1,$pad)) -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "     ⚠  Lance Claude Code depuis PowerShell !     " -Fo Yellow -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "     ⚔  peonforge.ch                              " -Fo $d -No; Write-Host "║" -Fo $gr
-Write-Host "    ║" -Fo $gr -No; Write-Host "                                                  " -No; Write-Host "║" -Fo $gr
-Write-Host "    ╚══════════════════════════════════════════════════╝" -Fo $gr
+Write-Host "    ======================================================" -Fo Green
+Write-Host "    =                                                    =" -Fo Green
+Write-Host "    =   Installation terminee !                          =" -Fo Green
+Write-Host "    =   $un - $sl" -Fo Green -No
+$pad = 52 - 4 - $un.Length - 3 - $sl.Length; if ($pad -lt 1) {$pad=1}; Write-Host (" " * $pad) -No; Write-Host "=" -Fo Green
+Write-Host "    =                                                    =" -Fo Green
+Write-Host "    =   IMPORTANT : Lance Claude Code depuis PowerShell  =" -Fo Yellow
+Write-Host "    =   peonforge.ch                                     =" -Fo DarkGray
+Write-Host "    =                                                    =" -Fo Green
+Write-Host "    ======================================================" -Fo Green
 Write-Host ""
-Write-Host "    Lancement de PeonForge..." -Fo $c
+Write-Host "    Lancement de PeonForge..." -Fo Cyan
 
 # Launch
 $ep2 = Join-Path $dir "node_modules\electron\dist\electron.exe"
+$ec = Join-Path $dir "node_modules\.bin\electron.cmd"
 if (Test-Path $ep2) { Start-Process $ep2 "`"$dir`"" -WorkingDirectory $dir }
-elseif (Test-Path (Join-Path $dir "node_modules\.bin\electron.cmd")) { Start-Process cmd.exe "/c cd /d `"$dir`" && `"$(Join-Path $dir 'node_modules\.bin\electron.cmd')`" ." -WindowStyle Hidden }
+elseif (Test-Path $ec) { Start-Process cmd.exe "/c cd /d `"$dir`" && `"$ec`" ." -WindowStyle Hidden }
 else { Start-Process cmd.exe "/c cd /d `"$dir`" && npx.cmd electron ." -WindowStyle Hidden }
 
-Start-Sleep -Seconds 3
-Write-Host "    ✓ PeonForge est dans le system tray !" -Fo $gr
+Start-Sleep 3
+Write-Host "    PeonForge est dans le system tray !" -Fo Green
 Write-Host ""
