@@ -45,7 +45,7 @@ function Write-Fail($text) {
 
 Show-Banner
 
-$totalSteps = 8
+$totalSteps = 9
 $installDir = Join-Path $env:USERPROFILE "PeonForge"
 
 # ─── Step 1: Check Git ───
@@ -134,8 +134,99 @@ if (Test-Path $hookScript) {
     Write-Warn "Script de hooks non trouve, skippe"
 }
 
-# ─── Step 8: Create startup shortcut ───
-Write-Step 8 $totalSteps "Creation du raccourci de demarrage..."
+# ─── Step 8: Choose faction + username ───
+Write-Step 8 $totalSteps "Configuration du profil..."
+Write-Host ""
+
+# Faction choice
+Write-Host "        Choisis ton camp :" -ForegroundColor White
+Write-Host ""
+Write-Host "          [1] " -ForegroundColor Cyan -NoNewline
+Write-Host "Alliance" -ForegroundColor Cyan -NoNewline
+Write-Host " (Paysan)" -ForegroundColor DarkGray
+Write-Host "          [2] " -ForegroundColor Red -NoNewline
+Write-Host "Horde" -ForegroundColor Red -NoNewline
+Write-Host "    (Peon)" -ForegroundColor DarkGray
+Write-Host ""
+$factionChoice = ""
+while ($factionChoice -ne "1" -and $factionChoice -ne "2") {
+    $factionChoice = Read-Host "        Ton choix (1 ou 2)"
+}
+$side = if ($factionChoice -eq "1") { "alliance" } else { "horde" }
+$faction = if ($side -eq "alliance") { "human" } else { "orc" }
+$avatar = if ($side -eq "alliance") { "peasant_fr" } else { "peon_fr" }
+$sideLabel = if ($side -eq "alliance") { "Alliance" } else { "Horde" }
+$avatarLabel = if ($side -eq "alliance") { "Paysan" } else { "Peon" }
+Write-OK "$sideLabel — $avatarLabel"
+Write-Host ""
+
+# Username
+$username = ""
+while ($true) {
+    $username = Read-Host "        Choisis ton pseudo (2-20 caracteres)"
+    if ($username.Length -lt 2 -or $username.Length -gt 20) {
+        Write-Warn "Le pseudo doit faire entre 2 et 20 caracteres"
+        continue
+    }
+    # Check if username is available on peonforge.ch
+    try {
+        $checkUrl = "https://peonforge.ch/api/player/$([uri]::EscapeDataString($username))"
+        $response = Invoke-RestMethod -Uri $checkUrl -Method Get -ErrorAction Stop -TimeoutSec 5
+        if ($response.username) {
+            Write-Warn "Le pseudo '$username' est deja pris ! Choisis-en un autre."
+            continue
+        }
+    } catch {
+        # 404 = not found = available, or network error = proceed
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -and $statusCode -ne 404) {
+            Write-Warn "Impossible de verifier le pseudo (erreur reseau). On continue."
+        }
+    }
+    break
+}
+Write-OK "Pseudo: $username"
+
+# Save config
+$configDir = Join-Path $env:USERPROFILE ".peonping-overlay"
+if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
+$configFile = Join-Path $configDir "config.json"
+$configData = @{
+    faction = $faction
+    side = $side
+    volume = 0.5
+    soundEnabled = $true
+    watching = $true
+    showCompanion = $true
+    showNotifications = $true
+    companionMini = $false
+} | ConvertTo-Json
+Set-Content $configFile -Value $configData -Encoding UTF8
+Write-OK "Configuration sauvee"
+
+# Register on peonforge.ch
+try {
+    $regBody = @{ username = $username; faction = $faction } | ConvertTo-Json
+    $regResponse = Invoke-RestMethod -Uri "https://peonforge.ch/api/register" -Method Post -Body $regBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
+    if ($regResponse.token) {
+        $forgeFile = Join-Path $configDir "forge.json"
+        $forgeData = @{
+            token = $regResponse.token
+            url = "https://peonforge.ch"
+            username = $username
+            avatar = $avatar
+        } | ConvertTo-Json
+        Set-Content $forgeFile -Value $forgeData -Encoding UTF8
+        Write-OK "Inscrit sur peonforge.ch comme '$username'"
+    }
+} catch {
+    Write-Warn "Inscription sur peonforge.ch echouee (pas grave, sera fait au prochain lancement)"
+}
+
+Write-Host ""
+
+# ─── Step 9: Create startup shortcut ───
+Write-Step 9 $totalSteps "Creation du raccourci de demarrage..."
 $startupDir = [System.IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup")
 $shortcutPath = Join-Path $startupDir "PeonForge.lnk"
 $electronExe = Join-Path $installDir "node_modules\electron\dist\electron.exe"
