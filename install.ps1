@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 # PeonForge — One-click installer
-# Run: irm https://peonforge.ch/install.ps1 | iex
+# Run: & ([scriptblock]::Create((irm https://peonforge.ch/install.ps1)))
 # Or:  powershell -ExecutionPolicy Bypass -File install.ps1
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -150,7 +150,8 @@ Write-Host "    (Peon)" -ForegroundColor DarkGray
 Write-Host ""
 $factionChoice = ""
 while ($factionChoice -ne "1" -and $factionChoice -ne "2") {
-    $factionChoice = Read-Host "        Ton choix (1 ou 2)"
+    Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
+    $factionChoice = [Console]::ReadLine()
 }
 $side = if ($factionChoice -eq "1") { "alliance" } else { "horde" }
 $faction = if ($side -eq "alliance") { "human" } else { "orc" }
@@ -163,7 +164,8 @@ Write-Host ""
 # Username
 $username = ""
 while ($true) {
-    $username = Read-Host "        Choisis ton pseudo (2-20 caracteres)"
+    Write-Host "        Choisis ton pseudo (2-20 caracteres): " -ForegroundColor White -NoNewline
+    $username = [Console]::ReadLine()
     if ($username.Length -lt 2 -or $username.Length -gt 20) {
         Write-Warn "Le pseudo doit faire entre 2 et 20 caracteres"
         continue
