@@ -183,16 +183,36 @@ if (-not (Test-Path $ep)) {
     $ep = Join-Path $dir "node_modules\electron\dist\electron.exe"
 }
 
+# Create shortcuts: Startup + Desktop + Start Menu
+$ip = Join-Path $dir "app-icon.ico"
+$sh = New-Object -ComObject WScript.Shell
+
 # Startup shortcut
 $sd = [IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup")
 try {
-    $sh = New-Object -ComObject WScript.Shell
     $lnk = $sh.CreateShortcut("$sd\PeonForge.lnk")
     $lnk.TargetPath = $ep; $lnk.Arguments = "`"$dir`""; $lnk.WorkingDirectory = $dir; $lnk.WindowStyle = 7
-    $lnk.Description = "PeonForge"; $ip = Join-Path $dir "app-icon.ico"
-    if (Test-Path $ip) { $lnk.IconLocation = $ip }; $lnk.Save()
-    OK "Demarrage automatique actif"
-} catch { WR "Raccourci echoue" }
+    $lnk.Description = "PeonForge"; if (Test-Path $ip) { $lnk.IconLocation = $ip }; $lnk.Save()
+    OK "Demarrage automatique"
+} catch { WR "Raccourci startup echoue" }
+
+# Desktop shortcut
+try {
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    $lnk2 = $sh.CreateShortcut("$desktop\PeonForge.lnk")
+    $lnk2.TargetPath = $ep; $lnk2.Arguments = "`"$dir`""; $lnk2.WorkingDirectory = $dir; $lnk2.WindowStyle = 7
+    $lnk2.Description = "PeonForge - Ton compagnon Warcraft pour Claude Code"; if (Test-Path $ip) { $lnk2.IconLocation = $ip }; $lnk2.Save()
+    OK "Raccourci bureau"
+} catch { WR "Raccourci bureau echoue" }
+
+# Start Menu shortcut
+try {
+    $sm = [IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs")
+    $lnk3 = $sh.CreateShortcut("$sm\PeonForge.lnk")
+    $lnk3.TargetPath = $ep; $lnk3.Arguments = "`"$dir`""; $lnk3.WorkingDirectory = $dir; $lnk3.WindowStyle = 7
+    $lnk3.Description = "PeonForge - Ton compagnon Warcraft pour Claude Code"; if (Test-Path $ip) { $lnk3.IconLocation = $ip }; $lnk3.Save()
+    OK "Raccourci menu demarrer"
+} catch { WR "Raccourci menu echoue" }
 
 # Done
 Write-Host ""
@@ -208,18 +228,25 @@ Write-Host "    =                                                    =" -Fo Gree
 Write-Host "    ======================================================" -Fo Green
 Write-Host ""
 
-# Launch as detached process (survives PowerShell close)
+# Launch as fully detached process (survives PowerShell close)
 Write-Host "    Lancement de PeonForge..." -Fo Cyan
 if (Test-Path $ep) {
-    # Use WMI to create a fully detached process
-    $wmi = [wmiclass]"Win32_Process"
-    $si = $wmi.GetMethodParameters("Create")
-    $si.CommandLine = "`"$ep`" `"$dir`""
-    $si.CurrentDirectory = $dir
-    $wmi.InvokeMethod("Create", $si) | Out-Null
-    Start-Sleep 3
-    Write-Host "    PeonForge est dans le system tray !" -Fo Green
+    # Create a temp VBS script to launch electron completely detached
+    $vbs = Join-Path $env:TEMP "peonforge_launch.vbs"
+    $vbsContent = "CreateObject(`"WScript.Shell`").Run `"`"`"$ep`"`" `"`"`"$dir`"`"`"`", 0, False"
+    Set-Content $vbs $vbsContent -Encoding ASCII
+    & wscript.exe $vbs
+    Start-Sleep 4
+    # Verify it's running
+    $running = Get-Process -Name "electron" -EA 0
+    if ($running) {
+        Write-Host "    PeonForge est dans le system tray !" -Fo Green
+    } else {
+        WR "Electron ne semble pas tourne. Double-clique le raccourci PeonForge sur le bureau."
+    }
+    Remove-Item $vbs -EA 0
 } else {
-    WR "electron.exe non trouve - lance manuellement : cd $dir; npm start"
+    WR "electron.exe non trouve"
+    WR "Double-clique le raccourci PeonForge sur le bureau pour lancer."
 }
 Write-Host ""
