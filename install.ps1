@@ -96,7 +96,7 @@ if (Test-Path (Join-Path $installDir ".git")) {
 # ─── Step 4: npm install ───
 Write-Step 4 $totalSteps "Installation des dependances Node..."
 Push-Location $installDir
-& npm install --silent 2>$null
+& npm.cmd install --silent 2>$null
 Pop-Location
 Write-OK "node_modules installe"
 
@@ -267,7 +267,14 @@ Write-Host ""
 
 # Launch PeonForge
 Push-Location $installDir
-Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Hidden
+# Launch Electron directly
+$electronPath = Join-Path $installDir "node_modules\electron\dist\electron.exe"
+if (Test-Path $electronPath) {
+    Start-Process -FilePath $electronPath -ArgumentList "`"$installDir`"" -WindowStyle Hidden
+} else {
+    # Fallback: npm.cmd start
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$installDir`" && npm.cmd start" -WindowStyle Hidden
+}
 Pop-Location
 
 Write-Host "  PeonForge est lance ! Cherche l'icone dans le system tray." -ForegroundColor Green
