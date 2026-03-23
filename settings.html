@@ -147,6 +147,17 @@ input[type="range"]::-webkit-slider-thumb {
       </div>
     </div>
 
+    <!-- Password -->
+    <div class="section">
+      <div class="section-title">Mot de passe (recuperation de compte)</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="password" id="password-input" maxlength="50" placeholder="Nouveau mot de passe..."
+          style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#e0e0f0;font-size:13px;outline:none;">
+        <button onclick="savePassword()" style="padding:8px 14px;background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.25);border-radius:8px;color:#00f0ff;font-size:12px;font-weight:600;cursor:pointer;">OK</button>
+      </div>
+      <div id="password-status" style="font-size:10px;color:#5a5040;margin-top:4px;"></div>
+    </div>
+
     <!-- Side -->
     <div class="section">
       <div class="section-title">Camp</div>
@@ -299,6 +310,21 @@ function loadUsername() {
 function saveUsername() {
   const name = document.getElementById('username-input').value.trim();
   if (name.length >= 2) window.api.setUsername(name);
+}
+
+// Password
+function savePassword() {
+  const pwd = document.getElementById('password-input').value;
+  if (pwd.length < 4) {
+    document.getElementById('password-status').textContent = 'Minimum 4 caracteres';
+    document.getElementById('password-status').style.color = '#ff5050';
+    return;
+  }
+  window.api.setPassword(pwd);
+  document.getElementById('password-input').value = '';
+  document.getElementById('password-status').textContent = 'Mot de passe mis a jour !';
+  document.getElementById('password-status').style.color = '#5aff5a';
+  setTimeout(() => { document.getElementById('password-status').textContent = ''; }, 3000);
 }
 
 // Characters grid

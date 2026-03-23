@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   setWatching: (v) => ipcRenderer.send('settings:set-watching', v),
   setVolume: (v) => ipcRenderer.send('settings:set-volume', v),
   setUsername: (name) => ipcRenderer.send('settings:set-username', name),
+  setPassword: (pwd) => ipcRenderer.send('settings:set-password', pwd),
   setShowCompanion: (v) => ipcRenderer.send('settings:set-show-companion', v),
   setShowNotifications: (v) => ipcRenderer.send('settings:set-show-notifications', v),
   test: () => ipcRenderer.send('settings:test'),

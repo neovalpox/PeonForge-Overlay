@@ -1456,6 +1456,24 @@ function startServer() {
             }
           }
         }
+        if (msg.type === 'set-password') {
+          const pwd = msg.password || '';
+          if (pwd.length >= 4 && forgeToken) {
+            // Forward to peonforge.ch API
+            const data = JSON.stringify({ password: pwd });
+            const url = new URL(forgeUrl + '/api/set-password');
+            const reqModule = url.protocol === 'https:' ? require('https') : http;
+            const req = reqModule.request({
+              hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80), path: url.pathname,
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${forgeToken}`, 'Content-Length': Buffer.byteLength(data) },
+              timeout: 5000,
+            }, (res) => { let b=''; res.on('data', c=>b+=c); res.on('end', () => console.log(`[PeonForge] Password set via mobile: ${b}`)); });
+            req.on('error', () => {});
+            req.write(data);
+            req.end();
+          }
+        }
         if (msg.type === 'start-terminal-stream') {
           const captureScript = path.join(__dirname, 'scripts', 'capture-terminal.ps1');
           const resizeScript = path.join(__dirname, 'scripts', 'resize-terminal.ps1');
@@ -1962,6 +1980,28 @@ ipcMain.on('settings:set-username', (e, name) => {
     syncToForge();
     console.log(`[PeonForge] Username set to: ${forgeUsername}`);
   }
+});
+
+ipcMain.on('settings:set-password', (e, pwd) => {
+  if (!forgeToken || !pwd || pwd.length < 4) return;
+  const data = JSON.stringify({ password: pwd });
+  const url = new URL(forgeUrl + '/api/set-password');
+  const reqModule = url.protocol === 'https:' ? require('https') : http;
+  const req = reqModule.request({
+    hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80), path: url.pathname,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${forgeToken}`, 'Content-Length': Buffer.byteLength(data) },
+    timeout: 5000,
+  }, (res) => {
+    let body = '';
+    res.on('data', c => body += c);
+    res.on('end', () => {
+      try { console.log(`[PeonForge] Password updated: ${JSON.parse(body).ok}`); } catch {}
+    });
+  });
+  req.on('error', (e) => { console.log(`[PeonForge] Password update error: ${e.message}`); });
+  req.write(data);
+  req.end();
 });
 
 // ─── App ──────────────────────────────────────────
