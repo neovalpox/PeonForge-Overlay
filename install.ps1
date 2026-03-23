@@ -208,10 +208,15 @@ Write-Host "    =                                                    =" -Fo Gree
 Write-Host "    ======================================================" -Fo Green
 Write-Host ""
 
-# Launch
+# Launch as detached process (survives PowerShell close)
 Write-Host "    Lancement de PeonForge..." -Fo Cyan
 if (Test-Path $ep) {
-    Start-Process -FilePath $ep -ArgumentList "`"$dir`"" -WorkingDirectory $dir
+    # Use WMI to create a fully detached process
+    $wmi = [wmiclass]"Win32_Process"
+    $si = $wmi.GetMethodParameters("Create")
+    $si.CommandLine = "`"$ep`" `"$dir`""
+    $si.CurrentDirectory = $dir
+    $wmi.InvokeMethod("Create", $si) | Out-Null
     Start-Sleep 3
     Write-Host "    PeonForge est dans le system tray !" -Fo Green
 } else {
