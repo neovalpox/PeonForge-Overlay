@@ -177,27 +177,29 @@ while ($true) {
         $response = Invoke-RestMethod -Uri $checkUrl -Method Get -ErrorAction Stop -TimeoutSec 5
         if ($response.username) {
             Write-Host ""
-            Write-Host "        Le pseudo '$username' existe deja sur peonforge.ch !" -ForegroundColor Yellow
-            Write-Host "        [1] C'est moi, je veux recuperer mon compte" -ForegroundColor Cyan
+            Write-Host "        Le pseudo '$username' existe deja !" -ForegroundColor Yellow
+            Write-Host "        [1] C'est mon compte, je me connecte" -ForegroundColor Cyan
             Write-Host "        [2] Choisir un autre pseudo" -ForegroundColor DarkGray
             Write-Host ""
             Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
             $recoverChoice = [Console]::ReadLine()
             if ($recoverChoice -eq "1") {
-                # Check if forge.json already has this token (reinstall on same PC)
-                $existingForge = Join-Path (Join-Path $env:USERPROFILE ".peonping-overlay") "forge.json"
-                if (Test-Path $existingForge) {
-                    try {
-                        $forgeData = Get-Content $existingForge -Raw | ConvertFrom-Json
-                        if ($forgeData.username -eq $username -and $forgeData.token) {
-                            $existingToken = $forgeData.token
-                            Write-OK "Compte recupere depuis la config locale"
-                            break
-                        }
-                    } catch {}
+                Write-Host "        Mot de passe: " -ForegroundColor White -NoNewline
+                $recoverPwd = [Console]::ReadLine()
+                try {
+                    $loginBody = @{ username = $username; password = $recoverPwd } | ConvertTo-Json
+                    $loginResp = Invoke-RestMethod -Uri "https://peonforge.ch/api/login" -Method Post -Body $loginBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
+                    if ($loginResp.token) {
+                        $existingToken = $loginResp.token
+                        Write-OK "Connexion reussie ! Bienvenue $username"
+                        break
+                    }
+                } catch {
+                    $errMsg = "Echec de connexion"
+                    try { $errMsg = ($_.ErrorDetails.Message | ConvertFrom-Json).error } catch {}
+                    Write-Fail $errMsg
+                    continue
                 }
-                Write-OK "Compte existant — la config sera creee au premier lancement"
-                break
             } else {
                 continue
             }
@@ -211,6 +213,20 @@ while ($true) {
     break
 }
 Write-OK "Pseudo: $username"
+
+# Ask for password (for account recovery later)
+$password = ""
+if (-not $existingToken) {
+    Write-Host ""
+    Write-Host "        Choisis un mot de passe (min 4 car., pour recuperer ton compte): " -ForegroundColor White -NoNewline
+    $password = [Console]::ReadLine()
+    while ($password.Length -lt 4) {
+        Write-Warn "Minimum 4 caracteres"
+        Write-Host "        Mot de passe: " -ForegroundColor White -NoNewline
+        $password = [Console]::ReadLine()
+    }
+    Write-OK "Mot de passe defini"
+}
 
 # Save config
 $configDir = Join-Path $env:USERPROFILE ".peonping-overlay"
@@ -242,7 +258,7 @@ if ($existingToken) {
     Write-OK "Compte existant restaure"
 } else {
     try {
-        $regBody = @{ username = $username; faction = $faction } | ConvertTo-Json
+        $regBody = @{ username = $username; faction = $faction; password = $password } | ConvertTo-Json
         $regResponse = Invoke-RestMethod -Uri "https://peonforge.ch/api/register" -Method Post -Body $regBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
         if ($regResponse.token) {
             $forgeData = @{
