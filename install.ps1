@@ -176,32 +176,71 @@ while ($true) {
         $checkUrl = "https://peonforge.ch/api/player/$([uri]::EscapeDataString($username))"
         $response = Invoke-RestMethod -Uri $checkUrl -Method Get -ErrorAction Stop -TimeoutSec 5
         if ($response.username) {
+            # Check if account has a password
+            $hasPassword = $true
+            try {
+                $pwdCheck = Invoke-RestMethod -Uri "https://peonforge.ch/api/player/$([uri]::EscapeDataString($username))/has-password" -Method Get -TimeoutSec 5 -ErrorAction Stop
+                $hasPassword = $pwdCheck.has_password -eq $true
+            } catch {}
+
             Write-Host ""
             Write-Host "        Le pseudo '$username' existe deja !" -ForegroundColor Yellow
-            Write-Host "        [1] C'est mon compte, je me connecte" -ForegroundColor Cyan
-            Write-Host "        [2] Choisir un autre pseudo" -ForegroundColor DarkGray
-            Write-Host ""
-            Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
-            $recoverChoice = [Console]::ReadLine()
-            if ($recoverChoice -eq "1") {
-                Write-Host "        Mot de passe: " -ForegroundColor White -NoNewline
-                $recoverPwd = [Console]::ReadLine()
-                try {
-                    $loginBody = @{ username = $username; password = $recoverPwd } | ConvertTo-Json
-                    $loginResp = Invoke-RestMethod -Uri "https://peonforge.ch/api/login" -Method Post -Body $loginBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
-                    if ($loginResp.token) {
-                        $existingToken = $loginResp.token
-                        Write-OK "Connexion reussie ! Bienvenue $username"
-                        break
+
+            if ($hasPassword) {
+                Write-Host "        [1] C'est mon compte, je me connecte" -ForegroundColor Cyan
+                Write-Host "        [2] Choisir un autre pseudo" -ForegroundColor DarkGray
+                Write-Host ""
+                Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
+                $recoverChoice = [Console]::ReadLine()
+                if ($recoverChoice -eq "1") {
+                    Write-Host "        Mot de passe: " -ForegroundColor White -NoNewline
+                    $recoverPwd = [Console]::ReadLine()
+                    try {
+                        $loginBody = @{ username = $username; password = $recoverPwd } | ConvertTo-Json
+                        $loginResp = Invoke-RestMethod -Uri "https://peonforge.ch/api/login" -Method Post -Body $loginBody -ContentType "application/json" -TimeoutSec 5 -ErrorAction Stop
+                        if ($loginResp.token) {
+                            $existingToken = $loginResp.token
+                            Write-OK "Connexion reussie ! Bienvenue $username"
+                            break
+                        }
+                    } catch {
+                        $errMsg = "Echec de connexion"
+                        try { $errMsg = ($_.ErrorDetails.Message | ConvertFrom-Json).error } catch {}
+                        Write-Fail $errMsg
+                        continue
                     }
-                } catch {
-                    $errMsg = "Echec de connexion"
-                    try { $errMsg = ($_.ErrorDetails.Message | ConvertFrom-Json).error } catch {}
-                    Write-Fail $errMsg
+                } else {
                     continue
                 }
             } else {
-                continue
+                # Account exists but no password — check local forge.json or let user claim it
+                Write-Host "        Ce compte n'a pas encore de mot de passe." -ForegroundColor DarkGray
+                Write-Host "        [1] C'est mon compte, je definis un mot de passe" -ForegroundColor Cyan
+                Write-Host "        [2] Choisir un autre pseudo" -ForegroundColor DarkGray
+                Write-Host ""
+                Write-Host "        Ton choix (1 ou 2): " -ForegroundColor White -NoNewline
+                $claimChoice = [Console]::ReadLine()
+                if ($claimChoice -eq "1") {
+                    # Check if local forge.json has the token for this username
+                    $existingForge = Join-Path (Join-Path $env:USERPROFILE ".peonping-overlay") "forge.json"
+                    if (Test-Path $existingForge) {
+                        try {
+                            $fData = Get-Content $existingForge -Raw | ConvertFrom-Json
+                            if ($fData.username -eq $username -and $fData.token) {
+                                $existingToken = $fData.token
+                                Write-OK "Compte recupere depuis la config locale"
+                                # Will set password in the next step
+                                $needsPassword = $true
+                                break
+                            }
+                        } catch {}
+                    }
+                    Write-Warn "Config locale non trouvee. Definis ton mot de passe depuis l'app ou le tray apres installation."
+                    Write-Host "        On continue avec ce pseudo." -ForegroundColor DarkGray
+                    break
+                } else {
+                    continue
+                }
             }
         }
     } catch {
@@ -216,7 +255,8 @@ Write-OK "Pseudo: $username"
 
 # Ask for password (for account recovery later)
 $password = ""
-if (-not $existingToken) {
+$needsPassword = if ($needsPassword) { $true } else { $false }
+if (-not $existingToken -or $needsPassword) {
     Write-Host ""
     Write-Host "        Choisis un mot de passe (min 4 car., pour recuperer ton compte): " -ForegroundColor White -NoNewline
     $password = [Console]::ReadLine()
@@ -256,6 +296,14 @@ if ($existingToken) {
     } | ConvertTo-Json
     Set-Content $forgeFile -Value $forgeData -Encoding UTF8
     Write-OK "Compte existant restaure"
+    # Set password if needed
+    if ($password.Length -ge 4) {
+        try {
+            $pwdBody = @{ password = $password } | ConvertTo-Json
+            Invoke-RestMethod -Uri "https://peonforge.ch/api/set-password" -Method Post -Body $pwdBody -ContentType "application/json" -Headers @{ Authorization = "Bearer $existingToken" } -TimeoutSec 5 -ErrorAction Stop | Out-Null
+            Write-OK "Mot de passe defini"
+        } catch { Write-Warn "Impossible de definir le mot de passe" }
+    }
 } else {
     try {
         $regBody = @{ username = $username; faction = $faction; password = $password } | ConvertTo-Json
