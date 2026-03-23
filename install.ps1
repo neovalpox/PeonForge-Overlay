@@ -10,11 +10,12 @@ function Show-Banner {
     $gold = "DarkYellow"
     $dim = "DarkGray"
     Write-Host ""
-    Write-Host "  ______                 ______                    " -ForegroundColor $gold
-    Write-Host " |   __ \.-----.-----.--|   __ \.-----.----.-----." -ForegroundColor $gold
-    Write-Host " |    __/|  -__|  _  |  |    __/|  _  |   _|  _  |" -ForegroundColor $gold
-    Write-Host " |___|   |_____|_____|__|___|   |_____|__| |___  |" -ForegroundColor $gold
-    Write-Host "                                           |_____|" -ForegroundColor $gold
+    Write-Host "  ____                   _____                    " -ForegroundColor $gold
+    Write-Host " |  _ \ ___  ___  _ __  |  ___|__  _ __ __ _  ___" -ForegroundColor $gold
+    Write-Host " | |_) / _ \/ _ \| '_ \ | |_ / _ \| '__/ _' |/ _ \" -ForegroundColor $gold
+    Write-Host " |  __/  __/ (_) | | | ||  _| (_) | | | (_| |  __/" -ForegroundColor $gold
+    Write-Host " |_|   \___|\___/|_| |_||_|  \___/|_|  \__, |\___|" -ForegroundColor $gold
+    Write-Host "                                        |___/     " -ForegroundColor $gold
     Write-Host ""
     Write-Host "  Ton compagnon Warcraft pour Claude Code" -ForegroundColor $dim
     Write-Host "  Work, work." -ForegroundColor $dim
